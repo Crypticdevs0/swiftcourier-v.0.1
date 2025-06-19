@@ -6,80 +6,105 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Lock, User } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Lock, User, AlertCircle } from "lucide-react"
 
-export default function AdminLoginPage() {
+export default function AdminLogin() {
   const [credentials, setCredentials] = useState({ username: "", password: "" })
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
-    // Simulate admin authentication
-    if (credentials.username === "admin" && credentials.password === "admin123") {
-      // In production, set secure session/JWT
-      localStorage.setItem("adminAuth", "true")
-      router.push("/admin")
-    } else {
-      setError("Invalid admin credentials")
+    try {
+      // Simulate authentication
+      if (credentials.username === "admin" && credentials.password === "admin123") {
+        // In a real app, you'd set authentication tokens here
+        localStorage.setItem("admin_authenticated", "true")
+        router.push("/admin")
+      } else {
+        setError("Invalid credentials. Use admin/admin123 for demo.")
+      }
+    } catch (err) {
+      setError("Authentication failed. Please try again.")
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <Shield className="h-12 w-12 text-red-600 mx-auto mb-4" />
-          <CardTitle className="text-2xl">Admin Access</CardTitle>
-          <p className="text-gray-600">Internal Use Only</p>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+            <Lock className="h-6 w-6 text-red-600" />
+          </div>
+          <CardTitle className="mt-4 text-2xl font-bold text-gray-900">Admin Login</CardTitle>
+          <CardDescription>Sign in to access the admin dashboard</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">{error}</div>
+              <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 rounded-md">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Admin Username</label>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
+                  id="username"
                   type="text"
-                  placeholder="Enter admin username"
                   value={credentials.username}
                   onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                   className="pl-10"
+                  placeholder="Enter username"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Admin Password</label>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
+                  id="password"
                   type="password"
-                  placeholder="Enter admin password"
                   value={credentials.password}
                   onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                   className="pl-10"
+                  placeholder="Enter password"
                   required
                 />
               </div>
             </div>
 
             <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={isLoading}>
-              {isLoading ? "Authenticating..." : "Access Admin Panel"}
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+
+          <div className="mt-4 p-3 bg-blue-50 rounded-md">
+            <p className="text-sm text-blue-600">
+              <strong>Demo Credentials:</strong>
+              <br />
+              Username: admin
+              <br />
+              Password: admin123
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

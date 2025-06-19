@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Package, Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { Package, Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
@@ -18,12 +18,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setSuccess("")
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -37,15 +39,19 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        // Store user data in localStorage (in production, use secure storage)
+        // Store user data in localStorage
         localStorage.setItem("user", JSON.stringify(data.user))
 
+        setSuccess("Login successful! Redirecting...")
+
         // Redirect based on user role
-        if (data.user.role === "admin") {
-          router.push("/admin")
-        } else {
-          router.push("/dashboard")
-        }
+        setTimeout(() => {
+          if (data.user.role === "admin") {
+            router.push("/admin")
+          } else {
+            router.push("/dashboard")
+          }
+        }, 1000)
       } else {
         setError(data.message || "Login failed")
       }
@@ -75,8 +81,20 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {/* Success Message */}
+              {success && (
+                <div className="flex items-center gap-2 p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md">
+                  <CheckCircle className="h-4 w-4" />
+                  {success}
+                </div>
+              )}
+
+              {/* Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">{error}</div>
+                <div className="flex items-center gap-2 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
               )}
 
               <div className="space-y-2">
@@ -144,7 +162,7 @@ export default function LoginPage() {
               <div className="text-center mt-4">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{" "}
-                  <Link href="/register" className="text-blue-600 hover:underline font-medium">
+                  <Link href="/auth" className="text-blue-600 hover:underline font-medium">
                     Sign up
                   </Link>
                 </p>
@@ -159,7 +177,7 @@ export default function LoginPage() {
                   <strong>Admin:</strong> admin@swiftcourier.com / admin123
                 </p>
                 <p>
-                  <strong>User:</strong> Any email / Any password
+                  <strong>User:</strong> user@swiftcourier.com / user123
                 </p>
               </div>
             </div>
