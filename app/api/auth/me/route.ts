@@ -1,47 +1,35 @@
 import { type NextRequest, NextResponse } from "next/server"
-
-// Mock user database
-const mockUsers = [
-  {
-    id: "1",
-    name: "Admin User",
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@swiftcourier.com",
-    role: "admin",
-  },
-  {
-    id: "2",
-    name: "Business User",
-    firstName: "Business",
-    lastName: "User",
-    email: "business@swiftcourier.com",
-    role: "business",
-  },
-  {
-    id: "3",
-    name: "Regular User",
-    firstName: "John",
-    lastName: "Doe",
-    email: "user@swiftcourier.com",
-    role: "user",
-  },
-]
+import { mockUsers } from "@/lib/mock-data"
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get("auth-token")?.value
+    // Get auth token from cookie
+    const authToken = request.cookies.get("auth-token")?.value
 
-    if (!token) {
-      return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
+    if (!authToken) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "No authentication token found",
+        },
+        { status: 401 },
+      )
     }
 
-    // Extract user ID from token (in production, verify JWT)
-    const userId = token.replace("token_", "").split("_")[0]
+    // Extract user ID from token (in production, verify JWT properly)
+    const userId = authToken.split("_")[1]
+
+    // Find user
     const user = mockUsers.find((u) => u.id === userId)
 
     if (!user) {
-      return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User not found",
+        },
+        { status: 404 },
+      )
     }
 
     return NextResponse.json({
@@ -49,14 +37,23 @@ export async function GET(request: NextRequest) {
       user: {
         id: user.id,
         name: user.name,
+        email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email,
         role: user.role,
+        userType: user.userType,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
       },
     })
   } catch (error) {
-    console.error("Auth check error:", error)
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
+    console.error("Auth me error:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Server error checking authentication",
+      },
+      { status: 500 },
+    )
   }
 }

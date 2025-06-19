@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { mockUsers } from "@/lib/mock-data"
 
 // Simple login validation schema
 const validateLoginInput = (data: any) => {
@@ -18,31 +19,6 @@ const validateLoginInput = (data: any) => {
 
   return { isValid: errors.length === 0, errors }
 }
-
-// Mock users for demo (in production, use a real database)
-const mockUsers = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@swiftcourier.com",
-    password: "admin123",
-    role: "admin",
-  },
-  {
-    id: "2",
-    name: "Business User",
-    email: "business@swiftcourier.com",
-    password: "business123",
-    role: "business",
-  },
-  {
-    id: "3",
-    name: "Regular User",
-    email: "user@swiftcourier.com",
-    password: "user123",
-    role: "user",
-  },
-]
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,6 +52,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Update last login
+    user.lastLogin = new Date().toISOString()
+
+    // Update user type based on activity
+    if (user.userType === "new") {
+      // Check if user has been active for more than 7 days
+      const daysSinceCreation = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      if (daysSinceCreation > 7) {
+        user.userType = "existing"
+      }
+    }
+
     // Create simple token (in production, use proper JWT)
     const token = `token_${user.id}_${Date.now()}`
 
@@ -87,7 +75,12 @@ export async function POST(request: NextRequest) {
         id: user.id,
         name: user.name,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
+        userType: user.userType,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
       },
       token,
     })

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { mockUsers } from "@/lib/mock-data"
 
 // Simple registration validation
 const validateRegistrationInput = (data: any) => {
@@ -31,18 +32,6 @@ const validateRegistrationInput = (data: any) => {
     errors,
   }
 }
-
-// Mock user storage (in production, use a real database)
-const mockUsers: Array<{
-  id: string
-  firstName: string
-  lastName: string
-  name: string
-  email: string
-  password: string
-  role: string
-  phone?: string
-}> = []
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,7 +74,9 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase(),
       password, // In production, hash this password
       role: "user",
+      userType: "new" as const, // New users start as "new"
       phone: phone || "",
+      createdAt: new Date().toISOString(),
     }
 
     // Add to mock storage
@@ -105,6 +96,8 @@ export async function POST(request: NextRequest) {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         role: newUser.role,
+        userType: newUser.userType,
+        createdAt: newUser.createdAt,
       },
       token,
     })
