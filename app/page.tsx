@@ -21,15 +21,17 @@ export default function HomePage() {
               <h3 className="text-lg font-semibold mb-4">Track Your Package</h3>
               <div className="flex gap-2 max-w-md mx-auto">
                 <Input placeholder="Enter tracking number" className="bg-white text-black" />
-                <Button variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
-                  Track
-                </Button>
+                <Link href="/track">
+                  <Button variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
+                    Track
+                  </Button>
+                </Link>
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/ship">
+              <Link href="/swiftship">
                 <Button variant="secondary" className="w-full bg-white text-blue-600 hover:bg-gray-100 h-12">
                   <Package className="mr-2 h-4 w-4" />
                   SwiftShip
@@ -65,9 +67,11 @@ export default function HomePage() {
                 <CardDescription>Real-time tracking for domestic and international shipments</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Learn More
-                </Button>
+                <Link href="/tracking/learn-more">
+                  <Button variant="outline" className="w-full">
+                    Learn More
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -78,9 +82,11 @@ export default function HomePage() {
                 <CardDescription>Calculate costs, print labels, and schedule pickups online</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Get Started
-                </Button>
+                <Link href="/swiftship">
+                  <Button variant="outline" className="w-full">
+                    Get Started
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -91,9 +97,11 @@ export default function HomePage() {
                 <CardDescription>Worldwide delivery with customs support and tracking</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Ship Globally
-                </Button>
+                <Link href="/shipping/international">
+                  <Button variant="outline" className="w-full">
+                    Ship Globally
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -104,9 +112,11 @@ export default function HomePage() {
                 <CardDescription>Digital previews of your incoming mail delivered daily</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Sign Up
-                </Button>
+                <Link href="/auth">
+                  <Button variant="outline" className="w-full">
+                    Sign Up
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -117,9 +127,11 @@ export default function HomePage() {
                 <CardDescription>Bulk mailing, marketing solutions, and business discounts</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  For Business
-                </Button>
+                <Link href="/business/services">
+                  <Button variant="outline" className="w-full">
+                    For Business
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -130,9 +142,11 @@ export default function HomePage() {
                 <CardDescription>Virtual mailbox services with premium street addressing</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Get Virtual Box
-                </Button>
+                <Link href="/swift-box">
+                  <Button variant="outline" className="w-full">
+                    Get Virtual Box
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>

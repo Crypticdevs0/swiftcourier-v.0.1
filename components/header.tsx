@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/navigation-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Package, Search, User } from "lucide-react"
-import { NotificationsPanel } from "@/components/notifications-panel"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -38,7 +37,7 @@ export function Header() {
                   <div className="grid gap-3 p-6 w-[400px]">
                     <NavigationMenuLink asChild>
                       <Link
-                        href="/ship/domestic"
+                        href="/shipping/domestic"
                         className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                       >
                         <div className="text-sm font-medium leading-none">Domestic Shipping</div>
@@ -49,7 +48,7 @@ export function Header() {
                     </NavigationMenuLink>
                     <NavigationMenuLink asChild>
                       <Link
-                        href="/ship/international"
+                        href="/shipping/international"
                         className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                       >
                         <div className="text-sm font-medium leading-none">International Shipping</div>
@@ -79,7 +78,7 @@ export function Header() {
                   <div className="grid gap-3 p-6 w-[400px]">
                     <NavigationMenuLink asChild>
                       <Link
-                        href="/track"
+                        href="/tracking/learn-more"
                         className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                       >
                         <div className="text-sm font-medium leading-none">Package Tracking</div>
@@ -149,36 +148,63 @@ export function Header() {
               </Button>
             </div>
 
-            <NotificationsPanel />
+            <Link href="/auth">
+              <Button variant="ghost" size="sm">
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </Link>
 
-            <Button variant="ghost" size="sm">
-              <User className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Fixed */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" aria-label="Open menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-80">
                 <div className="flex flex-col space-y-4 mt-8">
-                  <Link href="/ship" className="text-lg font-medium" onClick={() => setIsOpen(false)}>
-                    Ship
+                  <Link
+                    href="/swiftship"
+                    className="text-lg font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    SwiftShip
                   </Link>
-                  <Link href="/track" className="text-lg font-medium" onClick={() => setIsOpen(false)}>
-                    Track
+                  <Link
+                    href="/track"
+                    className="text-lg font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Track Package
                   </Link>
-                  <Link href="/store" className="text-lg font-medium" onClick={() => setIsOpen(false)}>
+                  <Link
+                    href="/store"
+                    className="text-lg font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
                     Swift Store
                   </Link>
-                  <Link href="/business" className="text-lg font-medium" onClick={() => setIsOpen(false)}>
+                  <Link
+                    href="/business"
+                    className="text-lg font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
                     Business
                   </Link>
-                  <Link href="/support" className="text-lg font-medium" onClick={() => setIsOpen(false)}>
+                  <Link
+                    href="/support"
+                    className="text-lg font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
                     Support
+                  </Link>
+                  <Link
+                    href="/auth"
+                    className="text-lg font-medium hover:text-blue-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Sign In
                   </Link>
                 </div>
               </SheetContent>
