@@ -5,7 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { LiveChatFixed } from "@/components/live-chat-fixed"
+import { TawkToChat } from "@/components/tawk-to-chat"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   keywords: "courier, package delivery, shipping, tracking, express delivery",
   authors: [{ name: "Swift Courier" }],
   viewport: "width=device-width, initial-scale=1",
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -35,7 +35,7 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
-            <LiveChatFixed />
+            <TawkToChat />
           </ThemeProvider>
         </ErrorBoundary>
       </body>
