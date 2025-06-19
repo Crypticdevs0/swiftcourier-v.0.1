@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { MapPin, Truck, Package, Clock, Wifi, AlertCircle } from "lucide-react"
+import { MapPin, Truck, Package, Clock, Wifi, AlertCircle, WifiOff } from "lucide-react"
 
 interface TrackingUpdate {
+  id: string
   timestamp: string
   location: string
   status: string
@@ -18,39 +19,50 @@ interface TrackingUpdate {
 interface RealTimeTrackerProps {
   trackingNumber: string
   onError?: (error: Error) => void
+  className?: string
 }
 
 type ConnectionState = "disconnected" | "connecting" | "connected" | "error"
 
-export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTrackerProps) {
+export function RealTimeTrackerFixed({ trackingNumber, onError, className = "" }: RealTimeTrackerProps) {
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected")
   const [updates, setUpdates] = useState<TrackingUpdate[]>([])
   const [currentStatus, setCurrentStatus] = useState("Initializing...")
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const reconnectAttempts = useRef(0)
   const maxReconnectAttempts = 5
+  const isUnmounted = useRef(false)
+
+  // Validate tracking number
+  const isValidTrackingNumber = useMemo(() => {
+    return trackingNumber && trackingNumber.length >= 6 && /^[A-Z0-9]+$/i.test(trackingNumber)
+  }, [trackingNumber])
 
   // Memoized mock data to prevent unnecessary re-renders
   const mockUpdates = useMemo<TrackingUpdate[]>(
     () => [
       {
+        id: "1",
         timestamp: new Date().toISOString(),
         location: "Distribution Center - Chicago, IL",
         status: "Package scanned at facility",
         coordinates: { lat: 41.8781, lng: -87.6298 },
       },
       {
+        id: "2",
         timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
         location: "Sorting Facility - Indianapolis, IN",
         status: "Package departed facility",
         coordinates: { lat: 39.7684, lng: -86.1581 },
       },
       {
+        id: "3",
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
         location: "Origin Facility - New York, NY",
         status: "Package received",
@@ -63,7 +75,7 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
   // Cleanup function
   const cleanup = useCallback(() => {
     if (wsRef.current) {
-      wsRef.current.close()
+      wsRef.current.close(1000, "Component unmounting")
       wsRef.current = null
     }
     if (reconnectTimeoutRef.current) {
@@ -78,7 +90,13 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
 
   // WebSocket connection with proper error handling
   const connectWebSocket = useCallback(() => {
-    if (connectionState === "connecting") return
+    if (connectionState === "connecting" || isUnmounted.current) return
+
+    if (!isValidTrackingNumber) {
+      setConnectionState("error")
+      setError("Invalid tracking number format")
+      return
+    }
 
     setConnectionState("connecting")
     setError(null)
@@ -88,24 +106,34 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
       // For demo purposes, we'll simulate the connection
 
       // Simulate connection delay
-      setTimeout(() => {
+      const connectionTimeout = setTimeout(() => {
+        if (isUnmounted.current) return
+
         if (reconnectAttempts.current < maxReconnectAttempts) {
           setConnectionState("connected")
           setCurrentStatus("In Transit")
           reconnectAttempts.current = 0
+          setRetryCount(0)
 
           // Start mock updates
           updateIntervalRef.current = setInterval(() => {
+            if (isUnmounted.current) return
+
             setUpdates(mockUpdates)
-            setProgress((prev) => Math.min(prev + 5, 85))
+            setProgress((prev) => Math.min(prev + Math.random() * 10, 85))
           }, 5000)
         } else {
           setConnectionState("error")
           setError("Maximum reconnection attempts reached")
-          onError?.(new Error("WebSocket connection failed"))
+          onError?.(new Error("WebSocket connection failed after multiple attempts"))
         }
       }, 2000)
+
+      // Store timeout for cleanup
+      reconnectTimeoutRef.current = connectionTimeout
     } catch (err) {
+      if (isUnmounted.current) return
+
       const error = err instanceof Error ? err : new Error("Connection failed")
       setConnectionState("error")
       setError(error.message)
@@ -113,40 +141,69 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
 
       // Attempt reconnection with exponential backoff
       if (reconnectAttempts.current < maxReconnectAttempts) {
-        const delay = Math.pow(2, reconnectAttempts.current) * 1000
+        const delay = Math.min(Math.pow(2, reconnectAttempts.current) * 1000, 30000)
         reconnectTimeoutRef.current = setTimeout(() => {
-          reconnectAttempts.current++
-          connectWebSocket()
+          if (!isUnmounted.current) {
+            reconnectAttempts.current++
+            setRetryCount((prev) => prev + 1)
+            connectWebSocket()
+          }
         }, delay)
       }
     }
-  }, [connectionState, mockUpdates, onError])
+  }, [connectionState, mockUpdates, onError, isValidTrackingNumber])
 
   // Manual reconnection
   const handleReconnect = useCallback(() => {
     cleanup()
     reconnectAttempts.current = 0
+    setRetryCount(0)
     setConnectionState("disconnected")
     connectWebSocket()
   }, [cleanup, connectWebSocket])
 
   // Initialize connection
   useEffect(() => {
-    connectWebSocket()
+    if (isValidTrackingNumber) {
+      connectWebSocket()
+    } else {
+      setConnectionState("error")
+      setError("Please provide a valid tracking number")
+    }
+
     return cleanup
-  }, [trackingNumber]) // Only depend on trackingNumber
+  }, [trackingNumber, connectWebSocket, cleanup, isValidTrackingNumber])
 
   // Cleanup on unmount
   useEffect(() => {
-    return cleanup
+    return () => {
+      isUnmounted.current = true
+      cleanup()
+    }
   }, [cleanup])
 
   const isConnected = connectionState === "connected"
   const isConnecting = connectionState === "connecting"
   const hasError = connectionState === "error"
 
+  if (!isValidTrackingNumber) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-red-600">
+              <AlertCircle className="mr-2 h-5 w-5" />
+              Invalid Tracking Number
+            </CardTitle>
+            <CardDescription>Please provide a valid tracking number to view real-time updates.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${className}`}>
       {/* Connection Status */}
       <Card>
         <CardHeader>
@@ -169,15 +226,18 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
               )}
               {isConnecting && (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                  <Badge variant="secondary">Connecting...</Badge>
+                  <div
+                    className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"
+                    aria-label="Connecting"
+                  />
+                  <Badge variant="secondary">Connecting{retryCount > 0 && ` (${retryCount})`}...</Badge>
                 </>
               )}
               {hasError && (
                 <>
-                  <AlertCircle className="h-4 w-4 text-red-600" aria-hidden="true" />
+                  <WifiOff className="h-4 w-4 text-red-600" aria-hidden="true" />
                   <Badge variant="destructive">Error</Badge>
-                  <Button size="sm" variant="outline" onClick={handleReconnect}>
+                  <Button size="sm" variant="outline" onClick={handleReconnect} disabled={isConnecting}>
                     Retry
                   </Button>
                 </>
@@ -187,9 +247,9 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md" role="alert">
               <div className="flex items-center">
-                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <AlertCircle className="h-4 w-4 text-red-600 mr-2" aria-hidden="true" />
                 <span className="text-sm text-red-800">{error}</span>
               </div>
             </div>
@@ -199,9 +259,9 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
             <div>
               <div className="flex justify-between text-sm mb-2">
                 <span>Delivery Progress</span>
-                <span>{progress}%</span>
+                <span>{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="h-2" aria-label={`Delivery progress: ${progress}%`} />
+              <Progress value={progress} className="h-2" aria-label={`Delivery progress: ${Math.round(progress)}%`} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -230,30 +290,33 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
               <div className="text-center py-8 text-gray-500">
                 <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" aria-hidden="true" />
                 <p>Waiting for updates...</p>
+                {isConnecting && <p className="text-sm mt-1">Connecting to tracking service...</p>}
               </div>
             ) : (
-              updates.map((update, index) => (
-                <div key={index} className="flex items-start space-x-3 pb-4 border-b last:border-b-0" role="listitem">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" aria-hidden="true" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-gray-900">{update.status}</p>
-                      <Badge variant="outline" className="text-xs">
-                        LIVE
-                      </Badge>
+              <ul className="space-y-4">
+                {updates.map((update) => (
+                  <li key={update.id} className="flex items-start space-x-3 pb-4 border-b last:border-b-0">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" aria-hidden="true" />
                     </div>
-                    <div className="flex items-center mt-1">
-                      <MapPin className="mr-1 h-3 w-3 text-gray-500" aria-hidden="true" />
-                      <p className="text-sm text-gray-600">{update.location}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-gray-900">{update.status}</p>
+                        <Badge variant="outline" className="text-xs">
+                          LIVE
+                        </Badge>
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <MapPin className="mr-1 h-3 w-3 text-gray-500" aria-hidden="true" />
+                        <p className="text-sm text-gray-600">{update.location}</p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        <time dateTime={update.timestamp}>{new Date(update.timestamp).toLocaleString()}</time>
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      <time dateTime={update.timestamp}>{new Date(update.timestamp).toLocaleString()}</time>
-                    </p>
-                  </div>
-                </div>
-              ))
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </CardContent>
@@ -275,6 +338,7 @@ export function RealTimeTrackerFixed({ trackingNumber, onError }: RealTimeTracke
               <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" aria-hidden="true" />
               <p className="text-gray-600">Interactive map with live GPS tracking</p>
               <p className="text-sm text-gray-500">Updates every 30 seconds</p>
+              {hasError && <p className="text-sm text-red-500 mt-2">Map unavailable - connection error</p>}
             </div>
           </div>
         </CardContent>

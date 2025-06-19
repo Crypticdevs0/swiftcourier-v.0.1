@@ -5,19 +5,81 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { TawkToChat } from "@/components/tawk-to-chat"
+import { SmartChatManager } from "@/components/smart-chat-manager"
 import { ErrorBoundary } from "@/components/error-boundary"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+})
 
 export const metadata: Metadata = {
-  title: "Swift Courier - Fast, Reliable Package Delivery",
+  title: {
+    default: "Swift Courier - Fast, Reliable Package Delivery",
+    template: "%s | Swift Courier",
+  },
   description:
-    "Professional courier and package delivery services with real-time tracking, express shipping, and nationwide coverage.",
-  keywords: "courier, package delivery, shipping, tracking, express delivery",
-  authors: [{ name: "Swift Courier" }],
-  viewport: "width=device-width, initial-scale=1",
-  generator: "v0.dev",
+    "Professional courier and package delivery services with real-time tracking, express shipping, and nationwide coverage. Fast, secure, and reliable delivery solutions.",
+  keywords: [
+    "courier service",
+    "package delivery",
+    "shipping",
+    "tracking",
+    "express delivery",
+    "logistics",
+    "freight",
+    "same day delivery",
+  ],
+  authors: [{ name: "Swift Courier", url: "https://swiftcourier.com" }],
+  creator: "Swift Courier",
+  publisher: "Swift Courier",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://swiftcourier.com"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Swift Courier - Fast, Reliable Package Delivery",
+    description:
+      "Professional courier and package delivery services with real-time tracking, express shipping, and nationwide coverage.",
+    url: "https://swiftcourier.com",
+    siteName: "Swift Courier",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Swift Courier - Professional Delivery Services",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Swift Courier - Fast, Reliable Package Delivery",
+    description:
+      "Professional courier and package delivery services with real-time tracking, express shipping, and nationwide coverage.",
+    images: ["/twitter-image.jpg"],
+    creator: "@swiftcourier",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -26,16 +88,32 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+      </head>
+      <body className={`${inter.className} antialiased`}>
         <ErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+            storageKey="swift-courier-theme"
+          >
             <div className="min-h-screen flex flex-col">
               <Header />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1" id="main-content">
+                {children}
+              </main>
               <Footer />
             </div>
-            <TawkToChat />
+            <SmartChatManager />
           </ThemeProvider>
         </ErrorBoundary>
       </body>
