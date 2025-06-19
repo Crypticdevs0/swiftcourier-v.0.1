@@ -1,85 +1,98 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateTrackingEvents, calculateProgress, type Package } from "@/lib/tracking"
+import { trackingSchema } from "@/lib/validation"
+import { findPackageByTrackingNumber, mockPackages, createPackage } from "@/lib/tracking"
 
-// Mock database - in production, this would be a real database
-const mockPackages: Record<string, Package> = {}
+// Create some sample packages for testing
+if (mockPackages.length === 0) {
+  // Sample delivered package
+  createPackage({
+    status: "delivered",
+    estimatedDelivery: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    currentLocation: "Delivered - Chicago, IL",
+    recipient: {
+      name: "Jane Smith",
+      address: "123 Main St",
+      city: "Chicago",
+      state: "IL",
+      zip: "60601",
+    },
+    sender: {
+      name: "John Doe",
+      address: "456 Oak Ave",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+    },
+    service: "Swift Express",
+    weight: 2.5,
+    dimensions: { length: 12, width: 8, height: 4 },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    deliveredAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    cost: 24.99,
+  })
+
+  // Sample in-transit package
+  createPackage({
+    status: "in_transit",
+    estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    currentLocation: "Distribution Center - Philadelphia, PA",
+    recipient: {
+      name: "Bob Johnson",
+      address: "789 Pine St",
+      city: "Los Angeles",
+      state: "CA",
+      zip: "90210",
+    },
+    sender: {
+      name: "Alice Brown",
+      address: "321 Elm St",
+      city: "Boston",
+      state: "MA",
+      zip: "02101",
+    },
+    service: "Swift Standard",
+    weight: 1.8,
+    dimensions: { length: 10, width: 6, height: 3 },
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    cost: 18.99,
+  })
+}
 
 export async function GET(request: NextRequest, { params }: { params: { trackingNumber: string } }) {
   try {
-    const trackingNumber = params.trackingNumber.toUpperCase()
+    const { trackingNumber } = params
 
-    // Check if package exists in mock database
-    let packageData = mockPackages[trackingNumber]
-
-    // If not found, generate mock data for demo purposes
-    if (!packageData) {
-      // Only generate for valid Swift Courier tracking numbers
-      if (!trackingNumber.startsWith("SC")) {
-        return NextResponse.json(
-          {
-            error: "Tracking number not found",
-            message: "The tracking number you entered could not be found in our system.",
-          },
-          { status: 404 },
-        )
-      }
-
-      // Generate mock package data
-      const statuses: Package["status"][] = ["pending", "in_transit", "out_for_delivery", "delivered"]
-      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)]
-      const createdAt = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-
-      packageData = {
-        trackingNumber,
-        status: randomStatus,
-        estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        currentLocation: randomStatus === "delivered" ? "Delivered" : "Distribution Center - Chicago, IL",
-        progress: calculateProgress(randomStatus),
-        recipient: {
-          name: "John Doe",
-          address: "123 Main St",
-          city: "Chicago",
-          state: "IL",
-          zip: "60601",
+    // Validate tracking number format
+    const validationResult = trackingSchema.safeParse({ trackingNumber })
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid tracking number format",
+          errors: validationResult.error.flatten().fieldErrors,
         },
-        sender: {
-          name: "Swift Courier Store",
-          address: "456 Business Ave",
-          city: "New York",
-          state: "NY",
-          zip: "10001",
-        },
-        service: "Swift Express",
-        weight: 2.5,
-        dimensions: { length: 12, width: 8, height: 4 },
-        events: generateTrackingEvents(trackingNumber, randomStatus, createdAt),
-        createdAt,
-        deliveredAt: randomStatus === "delivered" ? new Date().toISOString() : undefined,
-      }
-
-      // Store in mock database
-      mockPackages[trackingNumber] = packageData
+        { status: 400 },
+      )
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: packageData,
-      },
-      {
-        headers: {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+    // Find package
+    const packageData = findPackageByTrackingNumber(trackingNumber)
+    if (!packageData) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Package not found",
         },
-      },
-    )
+        { status: 404 },
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      package: packageData,
+    })
   } catch (error) {
-    console.error("Error fetching tracking data:", error)
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        message: "An unexpected error occurred while fetching tracking information.",
-      },
-      { status: 500 },
-    )
+    console.error("Tracking error:", error)
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
   }
 }
