@@ -1,144 +1,82 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/hooks/useAuth"
 import {
   Package,
-  Mail,
-  MapPin,
-  Plus,
-  Eye,
-  Download,
-  Calendar,
-  Bell,
-  Settings,
-  User,
-  CreditCard,
-  BarChart3,
-  Search,
-  Filter,
-  Printer,
-  ShoppingCart,
-  Home,
-  Menu,
+  Truck,
+  Clock,
   CheckCircle,
-  TrendingUp,
-  ChevronRight,
-  MoreVertical,
   AlertCircle,
-  RefreshCw,
-  Sparkles,
+  Plus,
+  Search,
+  Bell,
+  BarChart3,
+  DollarSign,
+  Activity,
+  Zap,
   Gift,
   Star,
+  ArrowRight,
+  RefreshCw,
 } from "lucide-react"
-import Link from "next/link"
 
-interface PackageType {
-  trackingNumber: string
-  status: string
-  estimatedDelivery: string
-  currentLocation: string
-  progress: number
-  recipient: {
-    name: string
-    address: string
-    city: string
-    state: string
-    zip: string
-  }
-  sender: {
-    name: string
-    address: string
-    city: string
-    state: string
-    zip: string
-  }
-  service: string
-  weight: number
-  dimensions: {
-    length: number
-    width: number
-    height: number
-  }
-  events: Array<{
-    id: string
-    timestamp: string
-    location: string
-    description: string
-    status: string
-  }>
-  createdAt: string
-  deliveredAt?: string
-  userId?: string
-  cost?: number
-}
-
-interface UserType {
+interface PackageData {
   id: string
-  email: string
-  name: string
-  role: string
-  firstName?: string
-  lastName?: string
-  phone?: string
-  company?: string
-  userType: "new" | "demo" | "existing"
-  createdAt: string
-  lastLogin?: string
+  trackingNumber: string
+  status: "pending" | "in-transit" | "delivered" | "exception"
+  recipient: string
+  destination: string
+  estimatedDelivery: string
+  cost: number
+  service: string
 }
 
-export default function DashboardPage() {
-  const [user, setUser] = useState<UserType | null>(null)
-  const [packages, setPackages] = useState<PackageType[]>([])
+interface DashboardStats {
+  totalPackages: number
+  inTransit: number
+  delivered: number
+  pending: number
+  totalSpent: number
+  avgDeliveryTime: string
+}
+
+export default function Dashboard() {
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  const [packages, setPackages] = useState<PackageData[]>([])
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPackages: 0,
+    inTransit: 0,
+    delivered: 0,
+    pending: 0,
+    totalSpent: 0,
+    avgDeliveryTime: "2-3 days",
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [userType, setUserType] = useState<"new" | "demo" | "existing">("new")
-  const [selectedPackage, setSelectedPackage] = useState<PackageType | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const router = useRouter()
+  const [refreshing, setRefreshing] = useState(false)
 
+  // Redirect if not authenticated
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData)
-        setUser(parsedUser)
-        setUserType(parsedUser.userType || "new")
-        loadUserPackages()
-      } catch (err) {
-        console.error("Error parsing user data:", err)
-        router.push("/login")
-      }
-    } else {
-      router.push("/login")
+    if (!authLoading && !user) {
+      router.push("/auth")
+      return
     }
-  }, [router])
+  }, [user, authLoading, router])
 
-  const loadUserPackages = async () => {
+  // Fetch packages data
+  const fetchPackages = async (showRefreshing = false) => {
+    if (!user) return
+
     try {
-      setLoading(true)
+      if (showRefreshing) setRefreshing(true)
+      else setLoading(true)
+
       setError(null)
 
       const response = await fetch("/api/packages", {
@@ -150,371 +88,339 @@ export default function DashboardPage() {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`Failed to fetch packages: ${response.status}`)
       }
 
       const data = await response.json()
 
-      if (data.success) {
-        setPackages(data.packages || [])
-        setUserType(data.userType || "new")
+      if (data.success && Array.isArray(data.packages)) {
+        setPackages(data.packages)
+
+        // Calculate stats
+        const totalPackages = data.packages.length
+        const inTransit = data.packages.filter((pkg: PackageData) => pkg.status === "in-transit").length
+        const delivered = data.packages.filter((pkg: PackageData) => pkg.status === "delivered").length
+        const pending = data.packages.filter((pkg: PackageData) => pkg.status === "pending").length
+        const totalSpent = data.packages.reduce((sum: number, pkg: PackageData) => sum + pkg.cost, 0)
+
+        setStats({
+          totalPackages,
+          inTransit,
+          delivered,
+          pending,
+          totalSpent,
+          avgDeliveryTime: "2-3 days",
+        })
       } else {
-        throw new Error(data.message || "Failed to load packages")
+        setPackages([])
+        setStats({
+          totalPackages: 0,
+          inTransit: 0,
+          delivered: 0,
+          pending: 0,
+          totalSpent: 0,
+          avgDeliveryTime: "2-3 days",
+        })
       }
     } catch (err) {
-      console.error("Error loading packages:", err)
+      console.error("Error fetching packages:", err)
       setError(err instanceof Error ? err.message : "Failed to load packages")
+      setPackages([])
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  const createNewShipment = () => {
-    router.push("/shipping/create")
+  useEffect(() => {
+    if (user) {
+      fetchPackages()
+    }
+  }, [user])
+
+  // Auto-refresh every 30 seconds for real-time updates
+  useEffect(() => {
+    if (!user) return
+
+    const interval = setInterval(() => {
+      fetchPackages(true)
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [user])
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4 text-yellow-500" />
+      case "in-transit":
+        return <Truck className="h-4 w-4 text-blue-500" />
+      case "delivered":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "exception":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return <Package className="h-4 w-4 text-gray-500" />
+    }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("user")
-    router.push("/")
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "in-transit":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "delivered":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "exception":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
   }
 
-  const retryLoadPackages = () => {
-    loadUserPackages()
-  }
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="h-96 bg-gray-200 rounded-lg"></div>
+          </div>
         </div>
       </div>
     )
   }
 
   if (!user) {
-    return null
+    return null // Will redirect
   }
 
-  const stats = {
-    activeShipments: packages.filter((p) => ["pending", "in_transit", "out_for_delivery"].includes(p.status)).length,
-    thisMonth: packages.length,
-    delivered: packages.filter((p) => p.status === "delivered").length,
-    savedAddresses: userType === "new" ? 0 : 5,
-  }
-
-  const quickActions = [
-    { icon: Search, label: "Track Package", href: "/track", color: "bg-blue-500" },
-    { icon: Plus, label: "Create Shipment", action: createNewShipment, color: "bg-green-500" },
-    { icon: ShoppingCart, label: "Buy Stamps", href: "/store", color: "bg-purple-500" },
-    { icon: Calendar, label: "Schedule Pickup", href: "/pickup", color: "bg-orange-500" },
-    { icon: Printer, label: "Print Label", href: "/labels", color: "bg-red-500" },
-    { icon: MapPin, label: "Hold Delivery", href: "/hold", color: "bg-yellow-500" },
-  ]
-
-  // New User Welcome Component
-  const NewUserWelcome = () => (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white overflow-hidden relative">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <CardContent className="p-8 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-4">
-                <Sparkles className="h-6 w-6" />
-                <h2 className="text-2xl font-bold">Welcome to Swift Courier!</h2>
-              </div>
-              <p className="text-blue-100 mb-6 max-w-2xl">
-                🎉 Your account has been created successfully! You're now ready to ship packages worldwide with our
-                fast, reliable, and secure courier service.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={createNewShipment} className="bg-white text-blue-600 hover:bg-blue-50 font-semibold">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Shipment
-                </Button>
-                <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                  <Gift className="mr-2 h-4 w-4" />
-                  Explore Features
-                </Button>
-              </div>
+  // New User Welcome Dashboard
+  if (user.userType === "new" && packages.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Welcome Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+              <Gift className="h-8 w-8 text-white" />
             </div>
-            <div className="hidden lg:block">
-              <Package className="h-24 w-24 text-white/30" />
-            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              Welcome to Swift Courier, {user.name}! 🎉
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              You're all set up! Let's get you started with your first shipment and explore all the amazing features we
+              have to offer.
+            </p>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Getting Started Guide */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Star className="h-5 w-5 text-yellow-500" />
-            <span>Getting Started</span>
-          </CardTitle>
-          <CardDescription>Follow these simple steps to start shipping with Swift Courier</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-blue-50 rounded-xl">
-              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-semibold mb-2">1. Create Shipment</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Start by creating your first shipment with our easy-to-use form
-              </p>
-              <Button size="sm" onClick={createNewShipment} className="w-full">
-                Get Started
-              </Button>
-            </div>
-
-            <div className="text-center p-6 bg-green-50 rounded-xl">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-semibold mb-2">2. Track Packages</h3>
-              <p className="text-sm text-gray-600 mb-4">Monitor your shipments in real-time with our tracking system</p>
-              <Button size="sm" variant="outline" className="w-full" asChild>
-                <Link href="/track">Try Tracking</Link>
-              </Button>
-            </div>
-
-            <div className="text-center p-6 bg-purple-50 rounded-xl">
-              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Settings className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-semibold mb-2">3. Customize Settings</h3>
-              <p className="text-sm text-gray-600 mb-4">Set up your preferences and saved addresses</p>
-              <Button size="sm" variant="outline" className="w-full">
-                Configure
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Features Overview */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle>What You Can Do</CardTitle>
-          <CardDescription>Explore all the features available to you</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { icon: Package, title: "Ship Packages", desc: "Send packages worldwide" },
-              { icon: Search, title: "Track Shipments", desc: "Real-time tracking" },
-              { icon: Calendar, title: "Schedule Pickup", desc: "Convenient pickup times" },
-              { icon: BarChart3, title: "View Analytics", desc: "Shipping insights" },
-            ].map((feature, index) => (
-              <div key={index} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-                <feature.icon className="h-8 w-8 text-blue-600 mb-3" />
-                <h4 className="font-medium mb-1">{feature.title}</h4>
-                <p className="text-sm text-gray-600">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-
-  // Demo User Badge
-  const DemoUserBadge = () => (
-    <div className="mb-6">
-      <Card className="border-orange-200 bg-orange-50">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <Star className="h-5 w-5 text-orange-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-medium text-orange-900">Demo Account</h3>
-              <p className="text-sm text-orange-700">
-                You're viewing sample data. Create a real account to start shipping!
-              </p>
-            </div>
-            <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-100">
-              Upgrade Account
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b shadow-sm sticky top-0 z-40">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center space-x-2">
-              <Package className="h-6 w-6 text-blue-600" />
-              <span className="font-bold text-blue-600">Swift</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            {userType === "demo" && (
-              <Badge variant="outline" className="text-orange-600 border-orange-300">
-                Demo
-              </Badge>
-            )}
-            {userType === "new" && (
-              <Badge variant="outline" className="text-green-600 border-green-300">
-                New
-              </Badge>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                    <Badge variant="secondary" className="w-fit text-xs">
-                      {userType.charAt(0).toUpperCase() + userType.slice(1)} User
-                    </Badge>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notifications
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Header */}
-      <div className="hidden lg:block bg-white border-b shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Package className="h-8 w-8 text-blue-600" />
-                <span className="text-2xl font-bold text-blue-600">Swift Courier</span>
-              </div>
-              <div className="hidden md:block w-px h-6 bg-gray-300"></div>
-              <div className="hidden md:block">
-                <div className="flex items-center space-x-3">
-                  <h1 className="text-xl font-semibold text-gray-900">Welcome back, {user.firstName || user.name}!</h1>
-                  {userType === "new" && (
-                    <Badge variant="outline" className="text-green-600 border-green-300">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      New User
-                    </Badge>
-                  )}
-                  {userType === "demo" && (
-                    <Badge variant="outline" className="text-orange-600 border-orange-300">
-                      <Star className="h-3 w-3 mr-1" />
-                      Demo Account
-                    </Badge>
-                  )}
+          {/* Getting Started Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <Card className="border-2 border-blue-200 hover:border-blue-300 transition-colors cursor-pointer group">
+              <CardHeader className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-3 group-hover:bg-blue-200 transition-colors">
+                  <Plus className="h-6 w-6 text-blue-600" />
                 </div>
-                <p className="text-sm text-gray-600">
-                  {userType === "new"
-                    ? "Start your shipping journey with Swift Courier"
-                    : "Manage your shipments and track packages"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input placeholder="Search packages..." className="pl-10 w-64" />
-              </div>
-              <Button variant="outline" size="sm" className="relative">
-                <Bell className="h-4 w-4" />
-                {userType !== "new" && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
-                )}
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-2">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="hidden md:inline">{user.name}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                      <Badge variant="secondary" className="w-fit text-xs">
-                        {userType.charAt(0).toUpperCase() + userType.slice(1)} User
-                      </Badge>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Bell className="mr-2 h-4 w-4" />
-                    Notifications
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </div>
+                <CardTitle className="text-lg">Create Your First Shipment</CardTitle>
+                <CardDescription>Send your first package with our easy-to-use shipping form</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full" onClick={() => router.push("/shipping/create")}>
+                  Start Shipping <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
 
-      <div className="container mx-auto px-4 lg:px-6 py-6 max-w-7xl">
-        {/* Demo User Badge */}
-        {userType === "demo" && <DemoUserBadge />}
-
-        {/* Error Banner */}
-        {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                  <div>
-                    <p className="text-sm font-medium text-red-800">Error loading packages</p>
-                    <p className="text-xs text-red-600">{error}</p>
-                  </div>
+            <Card className="border-2 border-green-200 hover:border-green-300 transition-colors cursor-pointer group">
+              <CardHeader className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-3 group-hover:bg-green-200 transition-colors">
+                  <Search className="h-6 w-6 text-green-600" />
                 </div>
+                <CardTitle className="text-lg">Track Any Package</CardTitle>
+                <CardDescription>Track packages from any carrier with our universal tracking system</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={retryLoadPackages}
-                  className="border-red-300 text-red-700 hover:bg-red-100"
+                  className="w-full border-green-200 text-green-700 hover:bg-green-50"
+                  onClick={() => router.push("/track")}
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Start Tracking <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-purple-200 hover:border-purple-300 transition-colors cursor-pointer group">
+              <CardHeader className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mb-3 group-hover:bg-purple-200 transition-colors">
+                  <Star className="h-6 w-6 text-purple-600" />
+                </div>
+                <CardTitle className="text-lg">Explore Features</CardTitle>
+                <CardDescription>Discover business tools, international shipping, and more</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
+                  onClick={() => router.push("/business")}
+                >
+                  Explore Now <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Stats for New Users */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                Why Choose Swift Courier?
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600 mb-1">99.9%</div>
+                  <div className="text-sm text-gray-600">On-Time Delivery</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 mb-1">24/7</div>
+                  <div className="text-sm text-gray-600">Customer Support</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600 mb-1">200+</div>
+                  <div className="text-sm text-gray-600">Countries Served</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Help Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Need Help Getting Started?</CardTitle>
+              <CardDescription>Our support team is here to help you every step of the way</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button variant="outline" className="flex-1">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Contact Support
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Activity className="mr-2 h-4 w-4" />
+                  View Tutorial
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Main Dashboard for Demo and Existing Users
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              Dashboard
+              {user.userType === "demo" && (
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+                  Demo Mode
+                </Badge>
+              )}
+            </h1>
+            <p className="text-gray-600 mt-1">Welcome back, {user.name}! Here's your shipping overview.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchPackages(true)}
+              disabled={refreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Updating..." : "Refresh"}
+            </Button>
+            <Button onClick={() => router.push("/shipping/create")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Shipment
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-l-4 border-l-blue-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Packages</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalPackages}</p>
+                </div>
+                <Package className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-yellow-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">In Transit</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.inTransit}</p>
+                </div>
+                <Truck className="h-8 w-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-green-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Delivered</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.delivered}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-purple-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Spent</p>
+                  <p className="text-2xl font-bold text-gray-900">${stats.totalSpent.toFixed(2)}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertCircle className="h-5 w-5" />
+                <span className="font-medium">Error loading packages:</span>
+                <span>{error}</span>
+                <Button variant="outline" size="sm" onClick={() => fetchPackages()} className="ml-auto">
                   Retry
                 </Button>
               </div>
@@ -522,420 +428,130 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* New User Welcome or Regular Dashboard */}
-        {userType === "new" ? (
-          <NewUserWelcome />
-        ) : (
-          <>
-            {/* Quick Actions - Mobile Optimized */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-4 text-gray-900">Quick Actions</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
-                {quickActions.map((action, index) => (
-                  <Card
-                    key={index}
-                    className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-0 shadow-md"
-                    onClick={action.action || (() => action.href && router.push(action.href))}
+        {/* Recent Packages */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  Recent Packages
+                  {refreshing && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
+                </CardTitle>
+                <CardDescription>
+                  {packages.length === 0
+                    ? "No packages found. Create your first shipment to get started!"
+                    : `Showing ${packages.length} package${packages.length !== 1 ? "s" : ""}`}
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => router.push("/search")}>
+                <Search className="mr-2 h-4 w-4" />
+                View All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {packages.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No packages yet</h3>
+                <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+                  {user.userType === "demo"
+                    ? "This is demo mode. In a real account, your packages would appear here."
+                    : "Start by creating your first shipment to see it appear here."}
+                </p>
+                <Button onClick={() => router.push("/shipping/create")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create First Shipment
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {packages.slice(0, 5).map((pkg) => (
+                  <div
+                    key={pkg.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/track?number=${pkg.trackingNumber}`)}
                   >
-                    <CardContent className="p-4 text-center">
-                      <div
-                        className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-200`}
-                      >
-                        <action.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 leading-tight">{action.label}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Stats Overview - Enhanced Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-              <Card className="border-0 shadow-md bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-100 text-sm font-medium">Active</p>
-                      <p className="text-2xl lg:text-3xl font-bold">{stats.activeShipments}</p>
-                      <p className="text-blue-100 text-xs">Shipments</p>
-                    </div>
-                    <div className="bg-white/20 p-3 rounded-xl">
-                      <Package className="h-6 w-6 lg:h-8 lg:w-8" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-md bg-gradient-to-r from-green-500 to-green-600 text-white">
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-green-100 text-sm font-medium">This Month</p>
-                      <p className="text-2xl lg:text-3xl font-bold">{stats.thisMonth}</p>
-                      <p className="text-green-100 text-xs">Total</p>
-                    </div>
-                    <div className="bg-white/20 p-3 rounded-xl">
-                      <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-md bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-100 text-sm font-medium">Delivered</p>
-                      <p className="text-2xl lg:text-3xl font-bold">{stats.delivered}</p>
-                      <p className="text-purple-100 text-xs">Packages</p>
-                    </div>
-                    <div className="bg-white/20 p-3 rounded-xl">
-                      <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-md bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-orange-100 text-sm font-medium">Addresses</p>
-                      <p className="text-2xl lg:text-3xl font-bold">{stats.savedAddresses}</p>
-                      <p className="text-orange-100 text-xs">Saved</p>
-                    </div>
-                    <div className="bg-white/20 p-3 rounded-xl">
-                      <Home className="h-6 w-6 lg:h-8 lg:w-8" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main Content - Mobile Optimized Tabs */}
-            <Tabs defaultValue="packages" className="space-y-6">
-              <div className="overflow-x-auto">
-                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 min-w-max lg:min-w-0">
-                  <TabsTrigger value="packages" className="text-xs lg:text-sm">
-                    Packages
-                  </TabsTrigger>
-                  <TabsTrigger value="swift-preview" className="text-xs lg:text-sm">
-                    Preview
-                  </TabsTrigger>
-                  <TabsTrigger value="addresses" className="text-xs lg:text-sm">
-                    Addresses
-                  </TabsTrigger>
-                  <TabsTrigger value="business" className="text-xs lg:text-sm">
-                    Business
-                  </TabsTrigger>
-                  <TabsTrigger value="billing" className="text-xs lg:text-sm">
-                    Billing
-                  </TabsTrigger>
-                  <TabsTrigger value="analytics" className="text-xs lg:text-sm">
-                    Analytics
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* Packages Tab - Enhanced Mobile Layout */}
-              <TabsContent value="packages">
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="pb-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                      <div>
-                        <CardTitle className="text-xl">My Packages</CardTitle>
-                        <CardDescription>Track and manage your shipments</CardDescription>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                          <Filter className="h-4 w-4 mr-2" />
-                          Filter
-                        </Button>
-                        <Button onClick={createNewShipment} className="flex-1 sm:flex-none">
-                          <Plus className="mr-2 h-4 w-4" />
-                          New
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="space-y-4 p-6 pt-0">
-                      {packages.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500 font-medium">No packages found</p>
-                          <p className="text-sm text-gray-400 mt-2">Create your first shipment to get started</p>
-                          <Button onClick={createNewShipment} className="mt-4">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Shipment
-                          </Button>
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {getStatusIcon(pkg.status)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                          <p className="font-medium text-gray-900 truncate">{pkg.trackingNumber}</p>
+                          <Badge variant="outline" className={`text-xs ${getStatusColor(pkg.status)} w-fit`}>
+                            {pkg.status.replace("-", " ").toUpperCase()}
+                          </Badge>
                         </div>
-                      ) : (
-                        packages.map((pkg) => (
-                          <Dialog key={pkg.trackingNumber}>
-                            <DialogTrigger asChild>
-                              <Card className="cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200">
-                                <CardContent className="p-4">
-                                  <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-start space-x-3">
-                                      <div
-                                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                                          pkg.status === "delivered"
-                                            ? "bg-green-100"
-                                            : pkg.status === "in_transit" || pkg.status === "out_for_delivery"
-                                              ? "bg-blue-100"
-                                              : "bg-gray-100"
-                                        }`}
-                                      >
-                                        <Package
-                                          className={`h-5 w-5 ${
-                                            pkg.status === "delivered"
-                                              ? "text-green-600"
-                                              : pkg.status === "in_transit" || pkg.status === "out_for_delivery"
-                                                ? "text-blue-600"
-                                                : "text-gray-600"
-                                          }`}
-                                        />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-gray-900 truncate">{pkg.trackingNumber}</p>
-                                        <p className="text-sm text-gray-600 truncate">To: {pkg.recipient.name}</p>
-                                        <p className="text-sm text-gray-500 truncate">
-                                          {pkg.recipient.city}, {pkg.recipient.state}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                      <Badge
-                                        variant={pkg.status === "delivered" ? "default" : "secondary"}
-                                        className="mb-1"
-                                      >
-                                        {pkg.status.replace("_", " ").toUpperCase()}
-                                      </Badge>
-                                      <p className="text-xs text-gray-500">
-                                        {new Date(pkg.estimatedDelivery).toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                      <span className="text-gray-600">Progress</span>
-                                      <span className="font-medium">{pkg.progress}%</span>
-                                    </div>
-                                    <Progress value={pkg.progress} className="h-2" />
-                                  </div>
-
-                                  <div className="flex items-center justify-between mt-4">
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-                                      <span className="truncate">{pkg.currentLocation}</span>
-                                    </div>
-                                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-md mx-4">
-                              <DialogHeader>
-                                <DialogTitle className="flex items-center space-x-2">
-                                  <Package className="h-5 w-5 text-blue-600" />
-                                  <span>Package Details</span>
-                                </DialogTitle>
-                                <DialogDescription>Tracking: {pkg.trackingNumber}</DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900">Status</p>
-                                    <Badge variant={pkg.status === "delivered" ? "default" : "secondary"}>
-                                      {pkg.status.replace("_", " ").toUpperCase()}
-                                    </Badge>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900">Service</p>
-                                    <p className="text-sm text-gray-600">{pkg.service}</p>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900 mb-2">Delivery Progress</p>
-                                  <Progress value={pkg.progress} className="h-3" />
-                                  <p className="text-xs text-gray-500 mt-1">{pkg.progress}% Complete</p>
-                                </div>
-
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">Current Location</p>
-                                  <p className="text-sm text-gray-600">{pkg.currentLocation}</p>
-                                </div>
-
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">Recipient</p>
-                                  <p className="text-sm text-gray-600">{pkg.recipient.name}</p>
-                                  <p className="text-sm text-gray-600">
-                                    {pkg.recipient.address}, {pkg.recipient.city}, {pkg.recipient.state}{" "}
-                                    {pkg.recipient.zip}
-                                  </p>
-                                </div>
-
-                                <div className="flex space-x-2 pt-4">
-                                  <Link href={`/track?number=${pkg.trackingNumber}`} className="flex-1">
-                                    <Button variant="outline" size="sm" className="w-full">
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      Track
-                                    </Button>
-                                  </Link>
-                                  <Button variant="outline" size="sm" className="flex-1">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Receipt
-                                  </Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Other tabs remain the same but with user type awareness */}
-              <TabsContent value="swift-preview">
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle>Swift Preview</CardTitle>
-                    <CardDescription>Digital previews of your incoming mail</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <Mail className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 font-medium">
-                        {userType === "new" ? "No mail previews yet" : "No mail previews available"}
-                      </p>
-                      <p className="text-sm text-gray-400 mt-2">
-                        {userType === "new"
-                          ? "Mail previews will appear here once you start receiving mail"
-                          : "Mail previews will appear here when available"}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="addresses">
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>Saved Addresses</CardTitle>
-                        <CardDescription>Manage your frequently used addresses</CardDescription>
+                        <p className="text-sm text-gray-600 truncate">
+                          To: {pkg.recipient} • {pkg.destination}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {pkg.service} • ${pkg.cost.toFixed(2)}
+                        </p>
                       </div>
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Address
-                      </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {userType === "new" ? (
-                      <div className="text-center py-12">
-                        <Home className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500 font-medium">No saved addresses yet</p>
-                        <p className="text-sm text-gray-400 mt-2">Add your first address to get started</p>
-                        <Button className="mt-4">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Address
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <Card className="border border-gray-200">
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-start space-x-3">
-                                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                                  <Home className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-900">Home</p>
-                                  <p className="text-sm text-gray-600">123 Main Street</p>
-                                  <p className="text-sm text-gray-600">New York, NY 10001</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Badge variant="outline">Default</Badge>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>Delete</DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    <div className="text-right mt-2 sm:mt-0 w-full sm:w-auto">
+                      <p className="text-sm text-gray-600">{new Date(pkg.estimatedDelivery).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-500">Est. Delivery</p>
+                    </div>
+                  </div>
+                ))}
 
-              <TabsContent value="business">
-                <div className="text-center py-12">
-                  <BarChart3 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">
-                    {userType === "new" ? "Business tools await" : "Business tools coming soon"}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    {userType === "new"
-                      ? "Upgrade to a business account to access advanced features"
-                      : "Advanced features for business customers"}
-                  </p>
-                  {userType === "new" && (
-                    <Button className="mt-4" variant="outline">
-                      Learn More
+                {packages.length > 5 && (
+                  <div className="text-center pt-4 border-t">
+                    <Button variant="outline" onClick={() => router.push("/search")}>
+                      View All {packages.length} Packages
                     </Button>
-                  )}
-                </div>
-              </TabsContent>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-              <TabsContent value="billing">
-                <div className="text-center py-12">
-                  <CreditCard className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">
-                    {userType === "new" ? "No billing history yet" : "Billing information"}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    {userType === "new"
-                      ? "Your billing information will appear here after your first shipment"
-                      : "Manage your payment methods and invoices"}
-                  </p>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push("/track")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Search className="h-5 w-5 text-blue-600" />
                 </div>
-              </TabsContent>
+                <div>
+                  <h3 className="font-medium text-gray-900">Track Package</h3>
+                  <p className="text-sm text-gray-600">Track any shipment</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-              <TabsContent value="analytics">
-                <div className="text-center py-12">
-                  <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">
-                    {userType === "new" ? "Analytics coming soon" : "Analytics dashboard"}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    {userType === "new"
-                      ? "Start shipping to see insights into your shipping patterns"
-                      : "Insights into your shipping patterns"}
-                  </p>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push("/business")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-green-600" />
                 </div>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
+                <div>
+                  <h3 className="font-medium text-gray-900">Business Tools</h3>
+                  <p className="text-sm text-gray-600">Bulk shipping & analytics</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push("/support")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Bell className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Support</h3>
+                  <p className="text-sm text-gray-600">Get help & contact us</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -27,30 +27,23 @@ export function TawkToChat() {
           return
         }
 
-        // Validate the widget ID first
-        const widgetId = "68536d09a4205c190bec8ae3"
-        if (!widgetId || widgetId.length < 20) {
-          console.warn("Invalid Tawk.to widget ID")
-          setHasError(true)
-          return
-        }
-
-        // Initialize Tawk_API with error handling
+        // Initialize Tawk_API and LoadStart
         window.Tawk_API = window.Tawk_API || {}
         window.Tawk_LoadStart = new Date()
 
-        // Create and configure script
+        // Create script element with your provided configuration
         const script = document.createElement("script")
+        const firstScript = document.getElementsByTagName("script")[0]
+
         script.async = true
-        script.src = `https://embed.tawk.to/${widgetId}/default`
+        script.src = "https://embed.tawk.to/68536d09a4205c190bec8ae3/default"
         script.charset = "UTF-8"
-        script.setAttribute("crossorigin", "anonymous")
+        script.setAttribute("crossorigin", "*")
 
         // Add comprehensive error handling
         script.onerror = (error) => {
           console.error("Failed to load Tawk.to chat widget:", error)
           setHasError(true)
-          // Clean up failed script
           script.remove()
         }
 
@@ -67,10 +60,9 @@ export function TawkToChat() {
             setHasError(true)
             script.remove()
           }
-        }, 10000) // 10 second timeout
+        }, 15000) // 15 second timeout
 
-        // Insert script
-        const firstScript = document.getElementsByTagName("script")[0]
+        // Insert script using your provided method
         if (firstScript?.parentNode) {
           firstScript.parentNode.insertBefore(script, firstScript)
         } else {
@@ -85,6 +77,22 @@ export function TawkToChat() {
               name: "Swift Courier Customer",
               email: "",
             })
+
+            // Customize chat widget
+            window.Tawk_API.customStyle = {
+              visibility: {
+                desktop: {
+                  position: "br",
+                  xOffset: 20,
+                  yOffset: 20,
+                },
+                mobile: {
+                  position: "br",
+                  xOffset: 10,
+                  yOffset: 10,
+                },
+              },
+            }
           } catch (error) {
             console.error("Error configuring Tawk.to:", error)
           }
@@ -95,7 +103,19 @@ export function TawkToChat() {
         }
 
         window.Tawk_API.onChatMaximized = () => {
-          // Ensure chat stays within the page
+          // Ensure chat stays within the page bounds
+          try {
+            const chatWidget = document.querySelector("#tawkchat-minified-container, #tawkchat-container")
+            if (chatWidget) {
+              ;(chatWidget as HTMLElement).style.zIndex = "9999"
+            }
+          } catch (error) {
+            console.error("Error adjusting chat widget:", error)
+          }
+        }
+
+        window.Tawk_API.onChatMinimized = () => {
+          console.log("Chat minimized")
         }
       } catch (error) {
         console.error("Error initializing Tawk.to:", error)
@@ -144,14 +164,11 @@ export function TawkToChat() {
     setTimeout(() => {
       setIsRetrying(false)
       // Trigger useEffect to reload
-      window.location.reload()
+      const event = new Event("tawk-retry")
+      window.dispatchEvent(event)
     }, 2000)
   }
 
-  // Don't render anything if there's an error (fallback chat will handle it)
-  if (hasError) {
-    return null
-  }
-
+  // Don't render anything visible (chat widget handles its own UI)
   return null
 }
