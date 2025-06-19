@@ -16,11 +16,6 @@ Your project is live at:
 
 **[https://vercel.com/cryptorank-4273s-projects/v0-image-analysis](https://vercel.com/cryptorank-4273s-projects/v0-image-analysis)**
 
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/LI5rymXmEBg](https://v0.dev/chat/projects/LI5rymXmEBg)**
 
 ## How It Works
 
