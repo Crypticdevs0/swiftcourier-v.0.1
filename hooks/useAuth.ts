@@ -1,28 +1,27 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 
 interface User {
-  id: number
+  id: string
   email: string
   name: string
-  firstName: string
-  lastName: string
+  firstName?: string
+  lastName?: string
   role: string
 }
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
 
   useEffect(() => {
     // Check if user is stored in localStorage
     const storedUser = localStorage.getItem("user")
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser))
+        const parsedUser = JSON.parse(storedUser)
+        setUser(parsedUser)
       } catch (error) {
         console.error("Error parsing stored user:", error)
         localStorage.removeItem("user")
@@ -32,22 +31,34 @@ export function useAuth() {
   }, [])
 
   const login = async (email: string, password: string) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (data.success) {
-      setUser(data.user)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      return { success: true, user: data.user }
-    } else {
-      return { success: false, message: data.message }
+      if (data.success) {
+        setUser(data.user)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        return { success: true, user: data.user }
+      } else {
+        return {
+          success: false,
+          message: data.message,
+          errors: data.errors,
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      return {
+        success: false,
+        message: "Network error. Please try again.",
+      }
     }
   }
 
@@ -57,42 +68,50 @@ export function useAuth() {
     email: string
     password: string
     confirmPassword: string
+    phone?: string
   }) => {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
-    })
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (data.success) {
-      setUser(data.user)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      return { success: true, user: data.user }
-    } else {
-      return { success: false, message: data.message, errors: data.errors }
+      if (data.success) {
+        setUser(data.user)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        return { success: true, user: data.user }
+      } else {
+        return {
+          success: false,
+          message: data.message,
+          errors: data.errors,
+        }
+      }
+    } catch (error) {
+      console.error("Registration error:", error)
+      return {
+        success: false,
+        message: "Network error. Please try again.",
+      }
     }
   }
 
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
-
+  const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
-    router.push("/")
-  }
 
-  const isAuthenticated = !!user
-  const isAdmin = user?.role === "admin"
+    // Call logout API to clear server-side session
+    fetch("/api/auth/logout", {
+      method: "POST",
+    }).catch((error) => {
+      console.error("Logout API error:", error)
+    })
+  }
 
   return {
     user,
@@ -100,7 +119,7 @@ export function useAuth() {
     login,
     register,
     logout,
-    isAuthenticated,
-    isAdmin,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "admin",
   }
 }

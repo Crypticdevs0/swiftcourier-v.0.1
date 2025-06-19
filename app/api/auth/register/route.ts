@@ -1,15 +1,47 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { registrationSchema } from "@/lib/validation"
 
-// Mock user database (in production, use a real database)
-const users: Array<{
-  id: number
-  email: string
-  password: string
+// Simple registration validation
+const validateRegistrationInput = (data: any) => {
+  const errors: { [key: string]: string[] } = {}
+
+  if (!data.firstName || typeof data.firstName !== "string" || data.firstName.trim().length < 2) {
+    errors.firstName = ["First name must be at least 2 characters"]
+  }
+
+  if (!data.lastName || typeof data.lastName !== "string" || data.lastName.trim().length < 2) {
+    errors.lastName = ["Last name must be at least 2 characters"]
+  }
+
+  if (!data.email || typeof data.email !== "string") {
+    errors.email = ["Email is required"]
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    errors.email = ["Invalid email format"]
+  }
+
+  if (!data.password || typeof data.password !== "string" || data.password.length < 6) {
+    errors.password = ["Password must be at least 6 characters"]
+  }
+
+  if (data.password !== data.confirmPassword) {
+    errors.confirmPassword = ["Passwords do not match"]
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  }
+}
+
+// Mock user storage (in production, use a real database)
+const mockUsers: Array<{
+  id: string
   firstName: string
   lastName: string
+  name: string
+  email: string
+  password: string
   role: string
-  createdAt: string
+  phone?: string
 }> = []
 
 export async function POST(request: NextRequest) {
@@ -17,49 +49,59 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate input
-    const validationResult = registrationSchema.safeParse(body)
-    if (!validationResult.success) {
+    const validation = validateRegistrationInput(body)
+    if (!validation.isValid) {
       return NextResponse.json(
         {
           success: false,
           message: "Validation failed",
-          errors: validationResult.error.flatten().fieldErrors,
+          errors: validation.errors,
         },
         { status: 400 },
       )
     }
 
-    const { firstName, lastName, email, password } = validationResult.data
+    const { firstName, lastName, email, password, phone } = body
 
     // Check if user already exists
-    const existingUser = users.find((user) => user.email.toLowerCase() === email.toLowerCase())
+    const existingUser = mockUsers.find((u) => u.email.toLowerCase() === email.toLowerCase())
     if (existingUser) {
-      return NextResponse.json({ success: false, message: "User already exists with this email" }, { status: 409 })
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User with this email already exists",
+          errors: { email: ["Email already registered"] },
+        },
+        { status: 409 },
+      )
     }
 
     // Create new user
     const newUser = {
-      id: users.length + 1,
+      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      name: `${firstName.trim()} ${lastName.trim()}`,
       email: email.toLowerCase(),
       password, // In production, hash this password
-      firstName,
-      lastName,
       role: "user",
-      createdAt: new Date().toISOString(),
+      phone: phone || "",
     }
 
-    users.push(newUser)
+    // Add to mock storage
+    mockUsers.push(newUser)
 
-    // Generate token
-    const token = `mock-jwt-token-${newUser.id}`
+    // Create simple token
+    const token = `token_${newUser.id}_${Date.now()}`
 
+    // Create response
     const response = NextResponse.json({
       success: true,
-      message: "Account created successfully",
+      message: "Registration successful",
       user: {
         id: newUser.id,
+        name: newUser.name,
         email: newUser.email,
-        name: `${newUser.firstName} ${newUser.lastName}`,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         role: newUser.role,
@@ -72,12 +114,19 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
     })
 
     return response
   } catch (error) {
     console.error("Registration error:", error)
-    return NextResponse.json({ success: false, message: "Server error during registration" }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Server error during registration. Please try again.",
+      },
+      { status: 500 },
+    )
   }
 }

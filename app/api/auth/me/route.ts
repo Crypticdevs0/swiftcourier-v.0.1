@@ -8,35 +8,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
     }
 
-    // Mock user data based on token (in production, decode JWT and fetch from database)
-    let user
-    if (token === "mock-jwt-token-1") {
-      user = {
-        id: 1,
-        email: "admin@swiftcourier.com",
-        name: "Admin User",
-        firstName: "Admin",
-        lastName: "User",
-        role: "admin",
-      }
-    } else if (token === "mock-jwt-token-2") {
-      user = {
-        id: 2,
-        email: "user@swiftcourier.com",
-        name: "John Doe",
-        firstName: "John",
-        lastName: "Doe",
-        role: "user",
-      }
-    } else {
-      return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 })
-    }
-
+    // In production, verify JWT token here
+    // For now, just return success if token exists
     return NextResponse.json({
       success: true,
-      user,
+      message: "Authenticated",
     })
   } catch (error) {
+    console.error("Auth check error:", error)
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
   }
 }
