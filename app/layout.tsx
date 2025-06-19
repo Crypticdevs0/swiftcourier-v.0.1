@@ -2,14 +2,21 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { LiveChatFixed } from "@/components/live-chat-fixed"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Swift Courier - Your Trusted Delivery Partner",
-  description: "Fast, reliable, and secure delivery services for individuals and businesses nationwide",
+  title: "Swift Courier - Fast, Reliable Package Delivery",
+  description:
+    "Professional courier and package delivery services with real-time tracking, express shipping, and nationwide coverage.",
+  keywords: "courier, package delivery, shipping, tracking, express delivery",
+  authors: [{ name: "Swift Courier" }],
+  viewport: "width=device-width, initial-scale=1",
     generator: 'v0.dev'
 }
 
@@ -19,11 +26,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <ErrorBoundary>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+            <LiveChatFixed />
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

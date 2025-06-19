@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/navigation-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Package, Search, User } from "lucide-react"
+import { NotificationsPanel } from "@/components/notifications-panel"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -147,6 +148,8 @@ export function Header() {
                 <Search className="h-4 w-4" />
               </Button>
             </div>
+
+            <NotificationsPanel />
 
             <Button variant="ghost" size="sm">
               <User className="h-4 w-4 mr-2" />
