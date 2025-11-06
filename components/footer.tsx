@@ -9,7 +9,7 @@ export function Footer() {
           {/* Company Info */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <Package className="h-6 w-6 text-blue-400" />
+              <img src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800" alt="Swift Courier logo" className="h-6 w-6 object-contain" />
               <span className="text-lg font-bold">Swift Courier</span>
             </div>
             <p className="text-gray-300 mb-4">
