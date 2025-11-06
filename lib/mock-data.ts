@@ -16,7 +16,7 @@ export interface User {
 export interface Package {
   id: string
   trackingNumber: string
-  status: "pending" | "in-transit" | "delivered" | "exception"
+  status: "pending" | "picked_up" | "in_transit" | "out_for_delivery" | "delivered" | "exception"
   sender: {
     name: string
     address: string
@@ -82,7 +82,7 @@ export const mockPackages: Package[] = [
   {
     id: "pkg_001",
     trackingNumber: "SC1234567890",
-    status: "in-transit",
+    status: "in_transit",
     sender: {
       name: "John Smith",
       address: "123 Main St",

@@ -28,7 +28,7 @@ import {
 interface PackageData {
   id: string
   trackingNumber: string
-  status: "pending" | "in-transit" | "delivered" | "exception"
+  status: "pending" | "picked_up" | "in_transit" | "out_for_delivery" | "delivered" | "exception"
   recipient: string
   destination: string
   estimatedDelivery: string
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
         // Calculate stats
         const totalPackages = data.packages.length
-        const inTransit = data.packages.filter((pkg: PackageData) => pkg.status === "in-transit").length
+        const inTransit = data.packages.filter((pkg: PackageData) => pkg.status === "in_transit").length
         const delivered = data.packages.filter((pkg: PackageData) => pkg.status === "delivered").length
         const pending = data.packages.filter((pkg: PackageData) => pkg.status === "pending").length
         const totalSpent = data.packages.reduce((sum: number, pkg: PackageData) => sum + pkg.cost, 0)
@@ -156,7 +156,7 @@ export default function Dashboard() {
     switch (status) {
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />
-      case "in-transit":
+      case "in_transit":
         return <Truck className="h-4 w-4 text-blue-500" />
       case "delivered":
         return <CheckCircle className="h-4 w-4 text-green-500" />
@@ -171,7 +171,7 @@ export default function Dashboard() {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "in-transit":
+      case "in_transit":
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "delivered":
         return "bg-green-100 text-green-800 border-green-200"

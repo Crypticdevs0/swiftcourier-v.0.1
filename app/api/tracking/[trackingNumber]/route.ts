@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getPackageByTrackingNumber, addTrackingEvent } from "@/lib/mock-data"
+import { deterministicRandom } from "@/lib/utils"
 
 export async function GET(request: NextRequest, { params }: { params: { trackingNumber: string } }) {
   try {
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest, { params }: { params: { tracking
       )
     }
 
-    // Simulate real-time updates by potentially adding new events
-    const shouldAddUpdate = Math.random() < 0.1 // 10% chance of new update
-    if (shouldAddUpdate && packageData.status === "in-transit") {
+    // Simulate real-time updates deterministically (stable per tracking number)
+    const shouldAddUpdate = deterministicRandom(trackingNumber) < 0.1 // ~10% chance deterministically
+    if (shouldAddUpdate && packageData.status === "in_transit") {
       const locations = [
         "Chicago, IL",
         "Denver, CO",
@@ -37,7 +38,9 @@ export async function GET(request: NextRequest, { params }: { params: { tracking
         "Portland, OR",
         "Seattle, WA",
       ]
-      const randomLocation = locations[Math.floor(Math.random() * locations.length)]
+      // Pick deterministic location based on tracking number
+      const idx = Math.floor(deterministicRandom(trackingNumber + "_loc") * locations.length)
+      const randomLocation = locations[idx]
 
       addTrackingEvent(trackingNumber, {
         timestamp: new Date().toISOString(),
