@@ -192,7 +192,7 @@ export const mockPackages: Package[] = [
   },
 ]
 
-export function generateMockPackages(userType: "new" | "demo" | "existing"): Package[] {
+export function generateMockPackages(userType: "new" | "demo" | "existing", userId?: string): Package[] {
   switch (userType) {
     case "new":
       return [] // New users have no packages

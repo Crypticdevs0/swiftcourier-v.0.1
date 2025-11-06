@@ -54,7 +54,8 @@ export const shipmentSchema = z.object({
 
 // Tracking schema
 export const trackingSchema = z.object({
-  trackingNumber: z.string().regex(/^SC\d{6}[A-Z0-9]{6}$/, "Invalid tracking number format"),
+  // Accept common mock formats like SC followed by 10-12 alphanumeric characters (case-insensitive)
+  trackingNumber: z.string().regex(/^SC[A-Z0-9]{10,12}$/i, "Invalid tracking number format"),
 })
 
 // Types
