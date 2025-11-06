@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { mockUsers } from "@/lib/mock-data"
+import * as jwt from "jsonwebtoken"
 
 // Simple login validation schema
 const validateLoginInput = (data: any) => {
@@ -64,8 +65,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create simple token (in production, use proper JWT)
-    const token = `token_${user.id}_${Date.now()}`
+    // Sign JWT token
+    const secret = process.env.JWT_SECRET || "dev_jwt_secret"
+    const token = jwt.sign({ userId: user.id }, secret, { expiresIn: "7d" })
 
     // Create response
     const response = NextResponse.json({

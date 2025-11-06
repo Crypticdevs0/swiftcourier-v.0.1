@@ -76,6 +76,20 @@ export const mockUsers: User[] = [
       language: "en",
     },
   },
+  {
+    id: "3",
+    email: "user@swiftcourier.com",
+    password: "user123",
+    name: "Regular User",
+    userType: "existing",
+    createdAt: "2024-01-10T00:00:00Z",
+    lastLogin: new Date().toISOString(),
+    preferences: {
+      notifications: true,
+      theme: "light",
+      language: "en",
+    },
+  },
 ]
 
 export const mockPackages: Package[] = [

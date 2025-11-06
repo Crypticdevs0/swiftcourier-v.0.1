@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { mockUsers } from "@/lib/mock-data"
+import * as jwt from "jsonwebtoken"
 
 // Simple registration validation
 const validateRegistrationInput = (data: any) => {
@@ -82,8 +83,9 @@ export async function POST(request: NextRequest) {
     // Add to mock storage
     mockUsers.push(newUser)
 
-    // Create simple token
-    const token = `token_${newUser.id}_${Date.now()}`
+    // Sign JWT token
+    const secret = process.env.JWT_SECRET || "dev_jwt_secret"
+    const token = jwt.sign({ userId: newUser.id }, secret, { expiresIn: "7d" })
 
     // Create response
     const response = NextResponse.json({

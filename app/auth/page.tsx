@@ -55,6 +55,7 @@ export default function AuthPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: signInData.email,
           password: signInData.password,
@@ -109,6 +110,7 @@ export default function AuthPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(signUpData),
       })
 
