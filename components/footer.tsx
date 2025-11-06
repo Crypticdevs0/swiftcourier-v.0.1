@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { Package, Facebook, Twitter, Instagram, Linkedin } from "lucide-react"
 import Link from "next/link"
 
