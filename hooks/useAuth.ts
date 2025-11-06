@@ -29,7 +29,7 @@ export function useAuth() {
     error: null,
   })
 
-  const checkAuth = useCallback(async () => {
+  const checkAuth = useCallback(async (signal?: AbortSignal) => {
     try {
       setAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
@@ -39,6 +39,7 @@ export function useAuth() {
         headers: {
           "Content-Type": "application/json",
         },
+        signal,
       })
 
       if (response.ok) {
@@ -190,7 +191,9 @@ export function useAuth() {
   }, [])
 
   useEffect(() => {
-    checkAuth()
+    const controller = new AbortController()
+    checkAuth(controller.signal)
+    return () => controller.abort()
   }, [checkAuth])
 
   return {

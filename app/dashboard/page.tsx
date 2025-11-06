@@ -70,7 +70,7 @@ export default function Dashboard() {
   }, [user, authLoading, router])
 
   // Fetch packages data
-  const fetchPackages = async (showRefreshing = false) => {
+  const fetchPackages = async (showRefreshing = false, signal?: AbortSignal) => {
     if (!user) return
 
     try {
@@ -85,6 +85,7 @@ export default function Dashboard() {
           "Content-Type": "application/json",
         },
         credentials: "include",
+        signal,
       })
 
       if (!response.ok) {
@@ -134,7 +135,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user) {
-      fetchPackages()
+      const controller = new AbortController()
+      fetchPackages(false, controller.signal)
+      return () => controller.abort()
     }
   }, [user])
 

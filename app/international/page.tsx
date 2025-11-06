@@ -24,14 +24,21 @@ export default function InternationalPage() {
   })
 
   useEffect(() => {
+    const controller = new AbortController()
     // Fetch countries data
-    fetch("/api/international/countries")
+    fetch("/api/international/countries", { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
           setCountries(data.countries)
         }
       })
+      .catch((err) => {
+        if ((err as any)?.name === "AbortError") return
+        console.error("Failed to load countries:", err)
+      })
+
+    return () => controller.abort()
   }, [])
 
   const selectedCountryData = countries.find((c) => c.code === selectedCountry)

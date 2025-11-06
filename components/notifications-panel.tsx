@@ -23,7 +23,25 @@ export function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    fetchNotifications()
+    const controller = new AbortController()
+    const wrappedFetch = async () => {
+      try {
+        const response = await fetch("/api/notifications", { signal: controller.signal })
+        const data = await response.json()
+
+        if (data.success) {
+          setNotifications(data.notifications)
+          setUnreadCount(data.unreadCount)
+        }
+      } catch (error) {
+        if ((error as any)?.name === "AbortError") return
+        console.error("Failed to fetch notifications:", error)
+      }
+    }
+
+    wrappedFetch()
+
+    return () => controller.abort()
   }, [])
 
   const fetchNotifications = async () => {

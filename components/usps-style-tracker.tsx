@@ -76,8 +76,12 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
   const [realTimeUpdates, setRealTimeUpdates] = useState(false)
 
   useEffect(() => {
-    fetchTrackingData()
+    const controller = new AbortController()
+    fetchTrackingData(controller.signal)
+    return () => controller.abort()
   }, [trackingNumber])
+
+  // Update fetchTrackingData to accept an AbortSignal
 
   // Real-time updates simulation
   useEffect(() => {
@@ -104,7 +108,7 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
     }
   }, [packageData, realTimeUpdates])
 
-  const fetchTrackingData = async () => {
+  const fetchTrackingData = async (signal?: AbortSignal) => {
     try {
       setLoading(true)
       setError(null)
@@ -133,7 +137,7 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
       }
 
       // Fetch actual data
-      const response = await fetch(`/api/tracking/${encodeURIComponent(trackingNumber)}`)
+      const response = await fetch(`/api/tracking/${encodeURIComponent(trackingNumber)}`, { signal })
       const data = await response.json()
 
       if (!response.ok) {
@@ -147,6 +151,10 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
         throw new Error(data.message || "Failed to fetch tracking data")
       }
     } catch (err) {
+      // Ignore AbortError which happens when the component is unmounted or the request is cancelled
+      if (err instanceof Error && (err as any).name === "AbortError") {
+        return
+      }
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch tracking data"
       setError(errorMessage)
       if (onError) {
