@@ -16,7 +16,7 @@ export interface User {
 export interface Package {
   id: string
   trackingNumber: string
-  status: "pending" | "in-transit" | "delivered" | "exception"
+  status: "pending" | "picked_up" | "in_transit" | "out_for_delivery" | "delivered" | "exception"
   sender: {
     name: string
     address: string
