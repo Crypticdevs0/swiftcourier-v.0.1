@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "origin-when-cross-origin")
   response.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://embed.tawk.to; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://embed.tawk.to wss://embed.tawk.to; frame-src https://embed.tawk.to;",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss:; frame-src 'none';",
   )
 
   // CORS headers for API routes: allow credentials and mirror request origin when present
