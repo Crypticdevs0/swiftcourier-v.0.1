@@ -56,7 +56,7 @@ export function Header() {
       <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/" prefetch={false} className="flex items-center space-x-2">
               <Package className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-blue-600">Swift Courier</span>
             </Link>
@@ -87,7 +87,7 @@ export function Header() {
               <NavigationMenu className="hidden lg:flex">
                 <NavigationMenuList>
                   <NavigationMenuItem>
-                    <Link href="/dashboard" legacyBehavior passHref>
+                    <Link href="/dashboard" prefetch={false} legacyBehavior passHref>
                       <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                         <Dashboard className="mr-2 h-4 w-4" />
                         Dashboard
@@ -104,7 +104,7 @@ export function Header() {
                       <div className="grid gap-3 p-6 w-[400px]">
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/shipping/create"
+                            href="/shipping/create" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">Create Shipment</div>
@@ -115,7 +115,7 @@ export function Header() {
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/track"
+                            href="/track" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">Track Packages</div>
@@ -130,7 +130,7 @@ export function Header() {
 
                   {user?.role === "business" || user?.role === "admin" ? (
                     <NavigationMenuItem>
-                      <Link href="/business" legacyBehavior passHref>
+                      <Link href="/business" prefetch={false} legacyBehavior passHref>
                         <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                           <Building2 className="mr-2 h-4 w-4" />
                           Business
@@ -140,7 +140,7 @@ export function Header() {
                   ) : null}
 
                   <NavigationMenuItem>
-                    <Link href="/support" legacyBehavior passHref>
+                    <Link href="/support" prefetch={false} legacyBehavior passHref>
                       <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                         <HeadphonesIcon className="mr-2 h-4 w-4" />
                         Support
@@ -196,19 +196,19 @@ export function Header() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer">
+                      <Link href="/dashboard" prefetch={false} className="cursor-pointer">
                         <Dashboard className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile" className="cursor-pointer">
+                      <Link href="/profile" prefetch={false} className="cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         Profile
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/settings" className="cursor-pointer">
+                      <Link href="/settings" prefetch={false} className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
@@ -244,7 +244,7 @@ export function Header() {
                       {/* Navigation Links */}
                       <div className="flex flex-col space-y-2">
                         <Link
-                          href="/dashboard"
+                          href="/dashboard" prefetch={false}
                           className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                           onClick={() => setIsOpen(false)}
                         >
@@ -252,7 +252,7 @@ export function Header() {
                           <span>Dashboard</span>
                         </Link>
                         <Link
-                          href="/track"
+                          href="/track" prefetch={false}
                           className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                           onClick={() => setIsOpen(false)}
                         >
@@ -260,7 +260,7 @@ export function Header() {
                           <span>Track Package</span>
                         </Link>
                         <Link
-                          href="/shipping/create"
+                          href="/shipping/create" prefetch={false}
                           className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                           onClick={() => setIsOpen(false)}
                         >
@@ -269,7 +269,7 @@ export function Header() {
                         </Link>
                         {(user?.role === "business" || user?.role === "admin") && (
                           <Link
-                            href="/business"
+                            href="/business" prefetch={false}
                             className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                             onClick={() => setIsOpen(false)}
                           >
@@ -278,7 +278,7 @@ export function Header() {
                           </Link>
                         )}
                         <Link
-                          href="/support"
+                          href="/support" prefetch={false}
                           className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                           onClick={() => setIsOpen(false)}
                         >
@@ -290,7 +290,7 @@ export function Header() {
                       {/* Account Actions */}
                       <div className="border-t pt-4 space-y-2">
                         <Link
-                          href="/profile"
+                          href="/profile" prefetch={false}
                           className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                           onClick={() => setIsOpen(false)}
                         >
@@ -298,7 +298,7 @@ export function Header() {
                           <span>Profile</span>
                         </Link>
                         <Link
-                          href="/settings"
+                          href="/settings" prefetch={false}
                           className="flex items-center space-x-3 text-lg font-medium hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-blue-50"
                           onClick={() => setIsOpen(false)}
                         >
@@ -332,7 +332,7 @@ export function Header() {
                       <div className="grid gap-3 p-6 w-[400px]">
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/shipping/domestic"
+                            href="/shipping/domestic" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">Domestic Shipping</div>
@@ -343,7 +343,7 @@ export function Header() {
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/shipping/international"
+                            href="/shipping/international" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">International Shipping</div>
@@ -354,7 +354,7 @@ export function Header() {
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/swiftship"
+                            href="/swiftship" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">SwiftShip</div>
@@ -384,7 +384,7 @@ export function Header() {
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/swift-preview"
+                            href="/swift-preview" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">Swift Preview</div>
@@ -395,7 +395,7 @@ export function Header() {
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/swift-box"
+                            href="/swift-box" prefetch={false}
                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent"
                           >
                             <div className="text-sm font-medium leading-none">Swift Box</div>
@@ -409,7 +409,7 @@ export function Header() {
                   </NavigationMenuItem>
 
                   <NavigationMenuItem>
-                    <Link href="/store" legacyBehavior passHref>
+                    <Link href="/store" prefetch={false} legacyBehavior passHref>
                       <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                         Swift Store
                       </NavigationMenuLink>
@@ -417,7 +417,7 @@ export function Header() {
                   </NavigationMenuItem>
 
                   <NavigationMenuItem>
-                    <Link href="/business" legacyBehavior passHref>
+                    <Link href="/business" prefetch={false} legacyBehavior passHref>
                       <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                         Business
                       </NavigationMenuLink>
@@ -425,7 +425,7 @@ export function Header() {
                   </NavigationMenuItem>
 
                   <NavigationMenuItem>
-                    <Link href="/support" legacyBehavior passHref>
+                    <Link href="/support" prefetch={false} legacyBehavior passHref>
                       <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                         Support
                       </NavigationMenuLink>
@@ -443,7 +443,7 @@ export function Header() {
                   </Button>
                 </div>
 
-                <Link href="/auth">
+                <Link href="/auth" prefetch={false}>
                   <Button variant="ghost" size="sm" className="transition-all duration-200 hover:scale-105">
                     <User className="h-4 w-4 mr-2" />
                     Sign In
@@ -460,42 +460,42 @@ export function Header() {
                   <SheetContent side="right" className="w-80">
                     <div className="flex flex-col space-y-4 mt-8">
                       <Link
-                        href="/swiftship"
+                        href="/swiftship" prefetch={false}
                         className="text-lg font-medium hover:text-blue-600 transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         SwiftShip
                       </Link>
                       <Link
-                        href="/track"
+                        href="/track" prefetch={false}
                         className="text-lg font-medium hover:text-blue-600 transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         Track Package
                       </Link>
                       <Link
-                        href="/store"
+                        href="/store" prefetch={false}
                         className="text-lg font-medium hover:text-blue-600 transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         Swift Store
                       </Link>
                       <Link
-                        href="/business"
+                        href="/business" prefetch={false}
                         className="text-lg font-medium hover:text-blue-600 transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         Business
                       </Link>
                       <Link
-                        href="/support"
+                        href="/support" prefetch={false}
                         className="text-lg font-medium hover:text-blue-600 transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         Support
                       </Link>
                       <Link
-                        href="/auth"
+                        href="/auth" prefetch={false}
                         className="text-lg font-medium hover:text-blue-600 transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
