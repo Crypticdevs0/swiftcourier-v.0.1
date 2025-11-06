@@ -104,24 +104,6 @@ export default function TrackPage() {
                   Track Package
                 </Button>
 
-                {/* Sample tracking numbers for demo */}
-                <div className="pt-4 border-t">
-                  <p className="text-xs text-gray-500 text-center mb-2">Try these sample tracking numbers:</p>
-                  <div className="space-y-1">
-                    {["SC123456789012", "SC987654321098", "SC456789123456"].map((sampleNumber) => (
-                      <button
-                        key={sampleNumber}
-                        onClick={() => {
-                          setTrackingNumber(sampleNumber)
-                          handleTrack(sampleNumber)
-                        }}
-                        className="block w-full text-xs text-blue-600 hover:text-blue-800 font-mono"
-                      >
-                        {sampleNumber}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </div>
