@@ -1,14 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { deterministicRandom } from "@/lib/utils"
 
 export async function POST(request: NextRequest) {
   try {
     const { amount, paymentMethod, shippingDetails, items } = await request.json()
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // Simulate payment processing (kept small delay)
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
-    // Mock payment success/failure
-    const isSuccess = Math.random() > 0.1 // 90% success rate
+    // Deterministic success/failure based on payment details
+    const seed = JSON.stringify({ amount, last4: paymentMethod?.last4 || "", type: paymentMethod?.type || "" })
+    const isSuccess = deterministicRandom(seed) > 0.1 // ~90% success deterministically
 
     if (isSuccess) {
       const transactionId = `SC_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -23,8 +25,8 @@ export async function POST(request: NextRequest) {
           date: new Date().toISOString(),
           items,
           total: amount,
-          paymentMethod: paymentMethod.type,
-          last4: paymentMethod.last4,
+          paymentMethod: paymentMethod?.type,
+          last4: paymentMethod?.last4,
         },
       })
     } else {
