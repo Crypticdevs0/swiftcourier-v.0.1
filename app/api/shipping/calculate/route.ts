@@ -7,7 +7,9 @@ export async function POST(request: NextRequest) {
     // Mock shipping calculation logic
     const baseRate = 8.95
     const weightMultiplier = Number.parseFloat(weight) * 0.5
-    const distanceMultiplier = Math.random() * 2 + 1 // Simulate distance calculation
+    // Deterministic distance multiplier based on from/to zips to make results repeatable in demo
+    const seed = `${fromZip}::${toZip}::${weight}::${dimensions?.length || 0}`
+    const distanceMultiplier = (deterministicRandom(seed) * 2) + 1
 
     const serviceMultipliers = {
       standard: 1,
