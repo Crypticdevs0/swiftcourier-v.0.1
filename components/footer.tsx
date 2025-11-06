@@ -29,7 +29,7 @@ export function Footer() {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/track" className="text-gray-300 hover:text-white">
+                <Link href="/track" prefetch={false} className="text-gray-300 hover:text-white">
                   Track Package
                 </Link>
               </li>
