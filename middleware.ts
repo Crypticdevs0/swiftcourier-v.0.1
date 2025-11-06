@@ -16,11 +16,17 @@ export function middleware(request: NextRequest) {
     "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://embed.tawk.to; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://embed.tawk.to wss://embed.tawk.to; frame-src https://embed.tawk.to;",
   )
 
-  // CORS headers for API routes
+  // CORS headers for API routes: allow credentials and mirror request origin when present
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    response.headers.set("Access-Control-Allow-Origin", "*")
+    const origin = request.headers.get("origin") || "*"
+    // When credentials are used, the value cannot be '*', so mirror origin
+    response.headers.set("Access-Control-Allow-Origin", origin)
+    response.headers.set("Access-Control-Allow-Credentials", "true")
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With, Accept, Accept-Language, Content-Language",
+    )
   }
 
   return response
