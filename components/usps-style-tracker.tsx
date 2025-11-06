@@ -76,8 +76,12 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
   const [realTimeUpdates, setRealTimeUpdates] = useState(false)
 
   useEffect(() => {
-    fetchTrackingData()
+    const controller = new AbortController()
+    fetchTrackingData(controller.signal)
+    return () => controller.abort()
   }, [trackingNumber])
+
+  // Update fetchTrackingData to accept an AbortSignal
 
   // Real-time updates simulation
   useEffect(() => {
