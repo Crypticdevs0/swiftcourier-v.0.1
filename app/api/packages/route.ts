@@ -82,7 +82,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract user ID from token
-    const userId = authToken.split("_")[1]
+    const userId = parseAuthToken(authToken)
+
+    if (!userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid authentication token",
+        },
+        { status: 401 },
+      )
+    }
 
     // Find user
     const user = mockUsers.find((u) => u.id === userId)
