@@ -20,3 +20,17 @@ export function parseAuthToken(token?: string | null): string | null {
   const userId = withoutPrefix.slice(0, lastUnderscore)
   return userId || null
 }
+
+/**
+ * Deterministic pseudo-random based on input string. Returns a number in [0,1).
+ * Stable for the same input, useful for demo deterministic behavior.
+ */
+export function deterministicRandom(seed: string): number {
+  let h = 5381
+  for (let i = 0; i < seed.length; i++) {
+    h = (h * 33) ^ seed.charCodeAt(i)
+  }
+  // Convert to positive integer
+  const value = Math.abs(h)
+  return (value % 1000) / 1000
+}
