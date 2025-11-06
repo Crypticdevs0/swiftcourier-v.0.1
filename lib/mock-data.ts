@@ -82,7 +82,7 @@ export const mockPackages: Package[] = [
   {
     id: "pkg_001",
     trackingNumber: "SC1234567890",
-    status: "in-transit",
+    status: "in_transit",
     sender: {
       name: "John Smith",
       address: "123 Main St",
