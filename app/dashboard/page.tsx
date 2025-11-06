@@ -28,7 +28,7 @@ import {
 interface PackageData {
   id: string
   trackingNumber: string
-  status: "pending" | "in-transit" | "delivered" | "exception"
+  status: "pending" | "picked_up" | "in_transit" | "out_for_delivery" | "delivered" | "exception"
   recipient: string
   destination: string
   estimatedDelivery: string
