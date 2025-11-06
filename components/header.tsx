@@ -57,7 +57,7 @@ export function Header() {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" prefetch={false} className="flex items-center space-x-2">
-              <Package className="h-8 w-8 text-blue-600" />
+              <img src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800" alt="Swift Courier logo" className="h-8 w-8 object-contain" />
               <span className="text-xl font-bold text-blue-600">Swift Courier</span>
             </Link>
             <div className="w-24 h-8 bg-gray-200 animate-pulse rounded" />
@@ -76,7 +76,7 @@ export function Header() {
             href={isAuthenticated ? "/dashboard" : "/"}
             className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
           >
-            <Package className="h-8 w-8 text-blue-600" />
+            <img src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800" alt="Swift Courier logo" className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold text-blue-600">Swift Courier</span>
           </Link>
 
