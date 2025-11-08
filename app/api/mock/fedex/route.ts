@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getPackageByTrackingNumber, mockPackages } from "@/lib/mock-data"
+import store from "@/lib/store"
 
 function mapToFedexFormat(pkg: any) {
   return {
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const hasTestKey = !!process.env.FEDEX_TEST_API_KEY
 
     if (all === "true") {
-      const list = mockPackages.map(mapToFedexFormat)
+      const list = (await store.getAllPackages()).map(mapToFedexFormat)
       return NextResponse.json({ success: true, using_test_key: hasTestKey, data: list })
     }
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: "trackingNumber required" }, { status: 400 })
     }
 
-    const pkg = getPackageByTrackingNumber(trackingNumber)
+    const pkg = await store.getPackageByTrackingNumber(trackingNumber)
 
     if (!pkg) {
       return NextResponse.json({ success: false, error: "Not found" }, { status: 404 })

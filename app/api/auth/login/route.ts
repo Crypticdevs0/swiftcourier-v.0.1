@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { mockUsers } from "@/lib/mock-data"
 import * as jwt from "jsonwebtoken"
+import store from "@/lib/store"
 
 // Simple login validation schema
 const validateLoginInput = (data: any) => {
@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     const { email, password } = body
 
     // Find user (in production, hash and compare passwords)
-    const user = mockUsers.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
+    const user = await store.findUserByEmail(email)
 
-    if (!user) {
+    if (!user || user.password !== password) {
       return NextResponse.json(
         {
           success: false,
@@ -54,11 +54,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Update last login
-    user.lastLogin = new Date().toISOString()
+    await store.updateUserLastLogin(user.id)
 
     // Update user type based on activity
     if (user.userType === "new") {
-      // Check if user has been active for more than 7 days
       const daysSinceCreation = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)
       if (daysSinceCreation > 7) {
         user.userType = "existing"

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { mockUsers } from "@/lib/mock-data"
 import * as jwt from "jsonwebtoken"
+import store from "@/lib/store"
 
 // Simple registration validation
 const validateRegistrationInput = (data: any) => {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { firstName, lastName, email, password, phone } = body
 
     // Check if user already exists
-    const existingUser = mockUsers.find((u) => u.email.toLowerCase() === email.toLowerCase())
+    const existingUser = await store.findUserByEmail(email)
     if (existingUser) {
       return NextResponse.json(
         {
@@ -67,21 +67,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user
-    const newUser = {
-      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const newUser = await store.createUser({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       name: `${firstName.trim()} ${lastName.trim()}`,
       email: email.toLowerCase(),
       password, // In production, hash this password
       role: "user",
-      userType: "new" as const, // New users start as "new"
+      userType: "new",
       phone: phone || "",
-      createdAt: new Date().toISOString(),
-    }
-
-    // Add to mock storage
-    mockUsers.push(newUser)
+    } as any)
 
     // Sign JWT token
     const secret = process.env.JWT_SECRET || "dev_jwt_secret"
