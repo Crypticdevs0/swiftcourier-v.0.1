@@ -21,6 +21,9 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const router = useRouter()
+  const auth = useAuth()
+  const { login, checkAuth, user: authUser } = auth
+  const [verificationPending, setVerificationPending] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,35 +32,17 @@ export default function LoginPage() {
     setSuccess("")
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-
+      const result = await login(email, password)
+      if (result.success) {
         setSuccess("Login successful! Redirecting...")
-
-        // Redirect based on user role
         setTimeout(() => {
-          if (data.user.role === "admin") {
-            router.push("/admin")
-          } else {
-            router.push("/dashboard")
-          }
-        }, 1000)
+          if (authUser?.role === "admin") router.push("/admin")
+          else router.push("/dashboard")
+        }, 800)
       } else {
-        setError(data.message || "Login failed")
+        setError(result.error || "Login failed")
       }
-    } catch (error) {
+    } catch (err) {
       setError("Network error. Please try again.")
     } finally {
       setIsLoading(false)
