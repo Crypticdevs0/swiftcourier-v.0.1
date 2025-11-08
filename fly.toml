@@ -1,0 +1,12 @@
+app = "swift-courier"
+kill_signal = "SIGINT"
+kill_timeout = 5
+
+[build]
+  image = "node:18-alpine"
+
+[env]
+  PORT = "8080"
+
+# Set environment variables on Fly with: fly secrets set JWT_SECRET=your_secret
+# Adjust app name before deploying.
