@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: swift-courier-web
+    env: node
+    plan: starter
+    region: oregon
+    buildCommand: "pnpm install && pnpm build"
+    startCommand: "pnpm start"
+    branch: glow-garden
+    autoDeploy: true
+    disk: 1024
+    instanceSize: "starter"
+    healthCheckPath: "/"
+
+# NOTE: Do NOT commit secrets into this file. After creating the service on Render,
+# set the following environment variables in the Render dashboard (Service > ENV VARS):
+# - NODE_ENV=production
+# - JWT_SECRET=<your_jwt_secret>
+# - NEXT_PUBLIC_... (any public keys you need)
+# - DATABASE_URL (if you use a database)
+# - SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (if using Supabase)
+# Render provides a secure way to set secrets via the dashboard or the render CLI.
