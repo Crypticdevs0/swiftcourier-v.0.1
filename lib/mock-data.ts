@@ -3,6 +3,9 @@ export interface User {
   email: string
   password: string
   name: string
+  firstName?: string
+  lastName?: string
+  role?: string
   userType: "new" | "demo" | "existing"
   createdAt: string
   lastLogin?: string
@@ -53,6 +56,9 @@ export const mockUsers: User[] = [
     email: "demo@swiftcourier.com",
     password: "demo123",
     name: "Demo User",
+    firstName: "Demo",
+    lastName: "User",
+    role: "demo",
     userType: "demo",
     createdAt: "2024-01-01T00:00:00Z",
     lastLogin: new Date().toISOString(),
@@ -67,6 +73,9 @@ export const mockUsers: User[] = [
     email: "admin@swiftcourier.com",
     password: "admin123",
     name: "Admin User",
+    firstName: "Admin",
+    lastName: "User",
+    role: "admin",
     userType: "existing",
     createdAt: "2023-01-01T00:00:00Z",
     lastLogin: new Date().toISOString(),
@@ -81,6 +90,9 @@ export const mockUsers: User[] = [
     email: "user@swiftcourier.com",
     password: "user123",
     name: "Regular User",
+    firstName: "Regular",
+    lastName: "User",
+    role: "user",
     userType: "existing",
     createdAt: "2024-01-10T00:00:00Z",
     lastLogin: new Date().toISOString(),

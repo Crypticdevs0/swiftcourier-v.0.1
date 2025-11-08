@@ -6,6 +6,9 @@ interface User {
   id: string
   email: string
   name: string
+  firstName?: string
+  lastName?: string
+  role?: string
   userType: "new" | "demo" | "existing"
   createdAt: string
   lastLogin?: string
