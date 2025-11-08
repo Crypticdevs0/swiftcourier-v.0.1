@@ -68,6 +68,29 @@ export function useAuth() {
         })
       }
     } catch (error) {
+      // Robustly detect AbortError across environments and ignore it
+      const err = error as any
+      const normalized = ((): string => {
+        try {
+          if (err == null) return ""
+          if (typeof err === "string") return err
+          if (typeof err === "object") {
+            if ("message" in err && typeof err.message === "string") return err.message
+            if ("name" in err && typeof err.name === "string") return err.name
+          }
+          return String(err)
+        } catch {
+          return ""
+        }
+      })().toLowerCase()
+
+      const isAbortError =
+        normalized.includes("abort") ||
+        normalized.includes("signal is aborted") ||
+        err?.type === "aborted"
+
+      if (isAbortError) return
+
       console.error("Auth check failed:", error)
       setAuthState({
         user: null,
