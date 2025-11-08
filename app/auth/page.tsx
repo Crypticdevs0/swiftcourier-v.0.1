@@ -54,42 +54,24 @@ export default function AuthPage() {
     setFormErrors({})
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: signInData.email,
-          password: signInData.password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-
+      const result = await login(signInData.email, signInData.password)
+      if (result.success) {
         setSuccess("Login successful! Redirecting...")
-
-        // Redirect based on user role
+        setShowVerifyRetry(false)
         setTimeout(() => {
-          if (data.user.role === "admin") {
-            router.push("/admin")
-          } else {
-            router.push("/dashboard")
-          }
-        }, 1000)
+          if (authUser?.role === "admin") router.push("/admin")
+          else router.push("/dashboard")
+        }, 800)
       } else {
-        if (data.errors) {
-          setFormErrors(data.errors)
+        // Show verification retry if verification failed
+        if (result.error && result.error.toLowerCase().includes("verification")) {
+          setError(result.error)
+          setShowVerifyRetry(true)
         } else {
-          setError(data.message || "Login failed")
+          setError(result.error || "Login failed")
         }
       }
-    } catch (error) {
+    } catch (err) {
       setError("Network error. Please try again.")
     } finally {
       setIsLoading(false)
@@ -109,35 +91,22 @@ export default function AuthPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(signUpData),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-
+      const name = `${signUpData.firstName} ${signUpData.lastName}`.trim()
+      const result = await register(signUpData.email, signUpData.password, name)
+      if (result.success) {
         setSuccess("Account created successfully! Redirecting to dashboard...")
-
-        // Redirect to dashboard
         setTimeout(() => {
           router.push("/dashboard")
-        }, 1000)
+        }, 800)
       } else {
-        if (data.errors) {
-          setFormErrors(data.errors)
+        if (result.error && result.error.toLowerCase().includes("verification")) {
+          setError(result.error)
+          setShowVerifyRetry(true)
         } else {
-          setError(data.message || "Registration failed")
+          setError(result.error || "Registration failed")
         }
       }
-    } catch (error) {
+    } catch (err) {
       setError("Network error. Please try again.")
     } finally {
       setIsLoading(false)
