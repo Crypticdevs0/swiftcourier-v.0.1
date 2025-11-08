@@ -147,6 +147,34 @@ export default function AuthPage() {
               </div>
             )}
 
+            {/* Verification Retry UI */}
+            {showVerifyRetry && (
+              <div className="mb-4 flex items-center gap-2">
+                <p className="text-sm text-gray-700">If you just logged in, the auth cookie may not have been set. Please ensure cookies are enabled.</p>
+                <button
+                  onClick={async () => {
+                    setVerificationPending(true)
+                    const ok = await checkAuth()
+                    setVerificationPending(false)
+                    if (ok) {
+                      setSuccess("Verification succeeded — redirecting...")
+                      setError("")
+                      setTimeout(() => {
+                        if (authUser?.role === "admin") router.push("/admin")
+                        else router.push("/dashboard")
+                      }, 600)
+                    } else {
+                      setError("Verification still failed. Please try again or contact support.")
+                    }
+                  }}
+                  className="ml-4 inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded"
+                  disabled={verificationPending}
+                >
+                  {verificationPending ? "Checking..." : "Retry Verification"}
+                </button>
+              </div>
+            )}
+
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
