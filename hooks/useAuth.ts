@@ -68,6 +68,11 @@ export function useAuth() {
         })
       }
     } catch (error) {
+      // Ignore abort errors triggered by the AbortController cleanup
+      if (typeof error === "object" && error !== null && "name" in error && (error as any).name === "AbortError") {
+        return
+      }
+
       console.error("Auth check failed:", error)
       setAuthState({
         user: null,
