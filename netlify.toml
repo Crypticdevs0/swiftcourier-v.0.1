@@ -1,0 +1,10 @@
+[build]
+  command = "pnpm build"
+  publish = ".next"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Credentials = "true"
+
+# Note: Deploying a Next.js app on Netlify may require the Next.js plugin for full SSR support.
