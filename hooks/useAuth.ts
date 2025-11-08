@@ -120,12 +120,25 @@ export function useAuth() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setAuthState({
-          user: data.user,
-          loading: false,
-          error: null,
-        })
-        return { success: true, user: data.user }
+        // Server returned a success response; verify session via /api/auth/me
+        const maxAttempts = 3
+        let verified = false
+        for (let i = 0; i < maxAttempts; i++) {
+          // small delay to allow cookies to be set by the browser
+          await new Promise((r) => setTimeout(r, i === 0 ? 200 : 500))
+          verified = await checkAuth()
+          if (verified) break
+        }
+
+        if (verified) {
+          // checkAuth already set user state
+          return { success: true, user: data.user }
+        }
+
+        const errorMessage =
+          "Authentication verification failed: no auth token received. Please ensure cookies are enabled and try again."
+        setAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+        return { success: false, error: errorMessage }
       } else {
         const errorMessage = data.error || "Login failed"
         setAuthState((prev) => ({
@@ -144,7 +157,7 @@ export function useAuth() {
       }))
       return { success: false, error: errorMessage }
     }
-  }, [])
+  }, [checkAuth])
 
   const register = useCallback(async (email: string, password: string, name: string) => {
     try {
