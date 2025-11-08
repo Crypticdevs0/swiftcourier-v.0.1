@@ -7,11 +7,13 @@ export type Store = {
   findUserByEmail: (email: string) => User | undefined
   findUserById: (id: string) => User | undefined
   createUser: (userData: Omit<User, "id" | "createdAt">) => User
+  updateUser: (userId: string, changes: Partial<User>) => User | undefined
   updateUserLastLogin: (userId: string) => void
   getPackageByTrackingNumber: (trackingNumber: string) => Package | undefined
   addTrackingEvent: (trackingNumber: string, event: Package["events"][0]) => boolean
   getAllPackages: () => Package[]
   seedInMemory: () => { seeded_in_memory: { users: number; packages: number; events: number }; sql_available: boolean }
+  generateMockPackages?: (userType: "new" | "demo" | "existing", userId?: string) => Package[]
 }
 
 // In-memory adapter (default)
