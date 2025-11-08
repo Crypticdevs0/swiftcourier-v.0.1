@@ -32,7 +32,7 @@ export function useAuth() {
     error: null,
   })
 
-  const checkAuth = useCallback(async (signal?: AbortSignal) => {
+  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
     try {
       setAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
@@ -53,12 +53,14 @@ export function useAuth() {
             loading: false,
             error: null,
           })
+          return true
         } else {
           setAuthState({
             user: null,
             loading: false,
             error: null,
           })
+          return false
         }
       } else {
         setAuthState({
@@ -66,6 +68,7 @@ export function useAuth() {
           loading: false,
           error: null,
         })
+        return false
       }
     } catch (error) {
       // Robustly detect AbortError across environments and ignore it
@@ -89,7 +92,7 @@ export function useAuth() {
         normalized.includes("signal is aborted") ||
         err?.type === "aborted"
 
-      if (isAbortError) return
+      if (isAbortError) return false
 
       console.error("Auth check failed:", error)
       setAuthState({
@@ -97,6 +100,7 @@ export function useAuth() {
         loading: false,
         error: error instanceof Error ? error.message : "Authentication failed",
       })
+      return false
     }
   }, [])
 
@@ -116,12 +120,25 @@ export function useAuth() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setAuthState({
-          user: data.user,
-          loading: false,
-          error: null,
-        })
-        return { success: true, user: data.user }
+        // Server returned a success response; verify session via /api/auth/me
+        const maxAttempts = 3
+        let verified = false
+        for (let i = 0; i < maxAttempts; i++) {
+          // small delay to allow cookies to be set by the browser
+          await new Promise((r) => setTimeout(r, i === 0 ? 200 : 500))
+          verified = await checkAuth()
+          if (verified) break
+        }
+
+        if (verified) {
+          // checkAuth already set user state
+          return { success: true, user: data.user }
+        }
+
+        const errorMessage =
+          "Authentication verification failed: no auth token received. Please ensure cookies are enabled and try again."
+        setAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+        return { success: false, error: errorMessage }
       } else {
         const errorMessage = data.error || "Login failed"
         setAuthState((prev) => ({
@@ -140,7 +157,7 @@ export function useAuth() {
       }))
       return { success: false, error: errorMessage }
     }
-  }, [])
+  }, [checkAuth])
 
   const register = useCallback(async (email: string, password: string, name: string) => {
     try {
@@ -158,12 +175,23 @@ export function useAuth() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setAuthState({
-          user: data.user,
-          loading: false,
-          error: null,
-        })
-        return { success: true, user: data.user }
+        // verify session via /api/auth/me
+        const maxAttempts = 3
+        let verified = false
+        for (let i = 0; i < maxAttempts; i++) {
+          await new Promise((r) => setTimeout(r, i === 0 ? 200 : 500))
+          verified = await checkAuth()
+          if (verified) break
+        }
+
+        if (verified) {
+          return { success: true, user: data.user }
+        }
+
+        const errorMessage =
+          "Authentication verification failed: no auth token received. Please ensure cookies are enabled and try again."
+        setAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+        return { success: false, error: errorMessage }
       } else {
         const errorMessage = data.error || "Registration failed"
         setAuthState((prev) => ({
@@ -182,7 +210,7 @@ export function useAuth() {
       }))
       return { success: false, error: errorMessage }
     }
-  }, [])
+  }, [checkAuth])
 
   const logout = useCallback(async () => {
     try {

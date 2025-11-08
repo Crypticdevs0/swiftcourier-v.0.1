@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,6 +24,10 @@ export default function AuthPage() {
   const [success, setSuccess] = useState("")
   const [formErrors, setFormErrors] = useState<FormErrors>({})
   const router = useRouter()
+  const auth = useAuth()
+  const { login, register, checkAuth, user: authUser } = auth
+  const [showVerifyRetry, setShowVerifyRetry] = useState(false)
+  const [verificationPending, setVerificationPending] = useState(false)
 
   // Sign In Form State
   const [signInData, setSignInData] = useState({
@@ -50,42 +55,24 @@ export default function AuthPage() {
     setFormErrors({})
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: signInData.email,
-          password: signInData.password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-
+      const result = await login(signInData.email, signInData.password)
+      if (result.success) {
         setSuccess("Login successful! Redirecting...")
-
-        // Redirect based on user role
+        setShowVerifyRetry(false)
         setTimeout(() => {
-          if (data.user.role === "admin") {
-            router.push("/admin")
-          } else {
-            router.push("/dashboard")
-          }
-        }, 1000)
+          if (authUser?.role === "admin") router.push("/admin")
+          else router.push("/dashboard")
+        }, 800)
       } else {
-        if (data.errors) {
-          setFormErrors(data.errors)
+        // Show verification retry if verification failed
+        if (result.error && result.error.toLowerCase().includes("verification")) {
+          setError(result.error)
+          setShowVerifyRetry(true)
         } else {
-          setError(data.message || "Login failed")
+          setError(result.error || "Login failed")
         }
       }
-    } catch (error) {
+    } catch (err) {
       setError("Network error. Please try again.")
     } finally {
       setIsLoading(false)
@@ -105,35 +92,22 @@ export default function AuthPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(signUpData),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-
+      const name = `${signUpData.firstName} ${signUpData.lastName}`.trim()
+      const result = await register(signUpData.email, signUpData.password, name)
+      if (result.success) {
         setSuccess("Account created successfully! Redirecting to dashboard...")
-
-        // Redirect to dashboard
         setTimeout(() => {
           router.push("/dashboard")
-        }, 1000)
+        }, 800)
       } else {
-        if (data.errors) {
-          setFormErrors(data.errors)
+        if (result.error && result.error.toLowerCase().includes("verification")) {
+          setError(result.error)
+          setShowVerifyRetry(true)
         } else {
-          setError(data.message || "Registration failed")
+          setError(result.error || "Registration failed")
         }
       }
-    } catch (error) {
+    } catch (err) {
       setError("Network error. Please try again.")
     } finally {
       setIsLoading(false)
@@ -171,6 +145,34 @@ export default function AuthPage() {
               <div className="mb-4 flex items-center gap-2 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
                 <AlertCircle className="h-4 w-4" />
                 {error}
+              </div>
+            )}
+
+            {/* Verification Retry UI */}
+            {showVerifyRetry && (
+              <div className="mb-4 flex items-center gap-2">
+                <p className="text-sm text-gray-700">If you just logged in, the auth cookie may not have been set. Please ensure cookies are enabled.</p>
+                <button
+                  onClick={async () => {
+                    setVerificationPending(true)
+                    const ok = await checkAuth()
+                    setVerificationPending(false)
+                    if (ok) {
+                      setSuccess("Verification succeeded — redirecting...")
+                      setError("")
+                      setTimeout(() => {
+                        if (authUser?.role === "admin") router.push("/admin")
+                        else router.push("/dashboard")
+                      }, 600)
+                    } else {
+                      setError("Verification still failed. Please try again or contact support.")
+                    }
+                  }}
+                  className="ml-4 inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded"
+                  disabled={verificationPending}
+                >
+                  {verificationPending ? "Checking..." : "Retry Verification"}
+                </button>
               </div>
             )}
 

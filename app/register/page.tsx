@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
@@ -34,6 +35,9 @@ export default function RegisterPage() {
   const [formErrors, setFormErrors] = useState<FormErrors>({})
   const router = useRouter()
 
+  const auth = useAuth()
+  const { register } = auth
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -48,33 +52,16 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-
+      const name = `${formData.firstName} ${formData.lastName}`.trim()
+      const result = await register(formData.email, formData.password, name)
+      if (result.success) {
         setSuccess("Account created successfully! Redirecting to dashboard...")
-
-        // Redirect to dashboard
         setTimeout(() => {
           router.push("/dashboard")
-        }, 1000)
+        }, 800)
       } else {
-        if (data.errors) {
-          setFormErrors(data.errors)
-        } else {
-          setError(data.message || "Registration failed")
-        }
+        if (result.error) setError(result.error)
+        else setError("Registration failed")
       }
     } catch (error) {
       setError("Network error. Please try again.")
