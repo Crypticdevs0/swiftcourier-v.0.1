@@ -27,6 +27,12 @@ const inMemoryAdapter: Store = {
   createUser(userData) {
     return mdCreateUser(userData as any)
   },
+  updateUser(userId: string, changes: Partial<User>) {
+    const user = mdFindUserById(userId)
+    if (!user) return undefined
+    Object.assign(user as any, changes)
+    return user
+  },
   updateUserLastLogin(userId: string) {
     mdUpdateUserLastLogin(userId)
   },
@@ -38,6 +44,9 @@ const inMemoryAdapter: Store = {
   },
   getAllPackages() {
     return mockPackages
+  },
+  generateMockPackages(userType: "new" | "demo" | "existing", userId?: string) {
+    return generateMockPackages(userType, userId)
   },
   seedInMemory() {
     // Mirror previous seeding behavior but make idempotent
