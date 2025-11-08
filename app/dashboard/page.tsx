@@ -124,6 +124,13 @@ export default function Dashboard() {
         })
       }
     } catch (err) {
+      const e = err as any
+      const msg = e && (e.message || e.name) ? String(e.message || e.name).toLowerCase() : ""
+      if (msg.includes("abort") || e?.type === "aborted") {
+        // fetch was aborted; do not update error state
+        return
+      }
+
       console.error("Error fetching packages:", err)
       setError(err instanceof Error ? err.message : "Failed to load packages")
       setPackages([])
