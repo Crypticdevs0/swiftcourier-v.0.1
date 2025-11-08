@@ -29,6 +29,22 @@ export function middleware(request: NextRequest) {
     )
   }
 
+  // Lightweight admin guard: server-side protect /admin routes by requiring an auth cookie.
+  // This is intentionally minimal (edge-compatible) and only checks presence of cookie.
+  try {
+    const pathname = request.nextUrl.pathname
+    if (pathname.startsWith("/admin")) {
+      const hasAuth = !!request.cookies.get("auth-token")
+      if (!hasAuth) {
+        const loginUrl = new URL("/admin/login", request.url)
+        return NextResponse.redirect(loginUrl)
+      }
+    }
+  } catch (err) {
+    // If anything goes wrong, allow the request to proceed but log in server logs
+    console.error("Middleware admin guard error:", err)
+  }
+
   return response
 }
 
