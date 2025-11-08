@@ -68,10 +68,17 @@ export function useAuth() {
         })
       }
     } catch (error) {
-      // Ignore abort errors triggered by the AbortController cleanup
-      if (typeof error === "object" && error !== null && "name" in error && (error as any).name === "AbortError") {
-        return
-      }
+      // Robustly detect AbortError across environments and ignore it
+      const err = error as any
+      const isAbortError =
+        err === null ||
+        err === undefined ||
+        err?.name === "AbortError" ||
+        err?.message?.toString().toLowerCase().includes("abort") ||
+        err?.message?.toString().toLowerCase().includes("signal is aborted") ||
+        err?.type === "aborted"
+
+      if (isAbortError) return
 
       console.error("Auth check failed:", error)
       setAuthState({
