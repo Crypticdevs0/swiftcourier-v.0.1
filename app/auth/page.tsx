@@ -23,6 +23,10 @@ export default function AuthPage() {
   const [success, setSuccess] = useState("")
   const [formErrors, setFormErrors] = useState<FormErrors>({})
   const router = useRouter()
+  const auth = useAuth()
+  const { login, register, checkAuth, user: authUser } = auth
+  const [showVerifyRetry, setShowVerifyRetry] = useState(false)
+  const [verificationPending, setVerificationPending] = useState(false)
 
   // Sign In Form State
   const [signInData, setSignInData] = useState({
