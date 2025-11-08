@@ -246,7 +246,21 @@ export function useAuth() {
 
   useEffect(() => {
     const controller = new AbortController()
-    checkAuth(controller.signal)
+    // Call checkAuth and guard against any thrown AbortError or unhandled rejections
+    void (async () => {
+      try {
+        await checkAuth(controller.signal)
+      } catch (err) {
+        const e = err as any
+        const msg = e && (e.message || e.name) ? String(e.message || e.name).toLowerCase() : ""
+        if (msg.includes("abort") || e?.type === "aborted") {
+          // ignore
+          return
+        }
+        console.error("Unhandled error in checkAuth:", err)
+      }
+    })()
+
     return () => controller.abort()
   }, [checkAuth])
 

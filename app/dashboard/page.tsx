@@ -492,7 +492,7 @@ export default function Dashboard() {
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 truncate">
-                          To: {pkg.recipient} • {pkg.destination}
+                          To: {typeof pkg.recipient === 'string' ? pkg.recipient : pkg.recipient?.name || pkg.recipient?.address || ""} • {pkg.destination}
                         </p>
                         <p className="text-xs text-gray-500">
                           {pkg.service} • ${pkg.cost.toFixed(2)}
