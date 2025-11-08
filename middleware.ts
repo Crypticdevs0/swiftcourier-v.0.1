@@ -15,11 +15,32 @@ export function middleware(request: NextRequest) {
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss:; frame-src 'none';",
   )
+  // Additional security headers for production
+  // HSTS (only enable in production to avoid local dev issues)
+  try {
+    if (process.env.NODE_ENV === "production") {
+      response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+    }
+  } catch (e) {
+    // ignore if headers cannot be set
+  }
+
+  // Permissions Policy (reduce powerful APIs)
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=()"
+  )
+
+  // Cross-Origin Resource Policy - allow same-origin resources only
+  // Keep relaxed for API endpoints if needed; default to same-origin to improve security
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin")
 
   // CORS headers for API routes: allow credentials and mirror request origin when present
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    const origin = request.headers.get("origin") || "*"
-    // When credentials are used, the value cannot be '*', so mirror origin
+    // Mirror the request origin when present; fall back to the request's origin when absent.
+    const originHeader = request.headers.get("origin")
+    const origin = originHeader || request.nextUrl.origin
+    // When credentials are used, the value cannot be '*', so ensure we set a concrete origin.
     response.headers.set("Access-Control-Allow-Origin", origin)
     response.headers.set("Access-Control-Allow-Credentials", "true")
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
