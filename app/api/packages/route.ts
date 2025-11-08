@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { mockUsers, generateMockPackages } from "@/lib/mock-data"
+import store from "@/lib/store"
 import { parseAuthToken } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find user
-    const user = mockUsers.find((u) => u.id === userId)
+    const user = await store.findUserById(userId)
 
     if (!user) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate packages based on user type
-    const packages = generateMockPackages(user.userType, user.id)
+    const packages = store.generateMockPackages ? store.generateMockPackages(user.userType, user.id) : []
 
     return NextResponse.json({
       success: true,
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
-    const user = mockUsers.find((u) => u.id === userId)
+    const user = await store.findUserById(userId)
 
     if (!user) {
       return NextResponse.json(
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     // Update user type if they were new
     if (user.userType === "new") {
-      user.userType = "existing"
+      await store.updateUser(user.id, { userType: "existing" })
     }
 
     return NextResponse.json({
