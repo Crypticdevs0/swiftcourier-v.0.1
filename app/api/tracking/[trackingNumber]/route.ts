@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getPackageByTrackingNumber, addTrackingEvent } from "@/lib/mock-data"
+import store from "@/lib/store"
 import { deterministicRandom } from "@/lib/utils"
 
 export async function GET(request: NextRequest, { params }: { params: { trackingNumber: string } }) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { tracking
     // Simulate API delay for realistic experience
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const packageData = getPackageByTrackingNumber(trackingNumber)
+    const packageData = await store.getPackageByTrackingNumber(trackingNumber)
 
     if (!packageData) {
       return NextResponse.json(
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: { tracking
       const idx = Math.floor(deterministicRandom(trackingNumber + "_loc") * locations.length)
       const randomLocation = locations[idx]
 
-      addTrackingEvent(trackingNumber, {
+      await store.addTrackingEvent(trackingNumber, {
         timestamp: new Date().toISOString(),
         status: "In Transit",
         location: randomLocation,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest, { params }: { params: { trackin
       timestamp: new Date().toISOString(),
     }
 
-    const success = addTrackingEvent(trackingNumber, eventWithTimestamp)
+    const success = await store.addTrackingEvent(trackingNumber, eventWithTimestamp)
 
     if (!success) {
       return NextResponse.json({ success: false, error: "Package not found" }, { status: 404 })
