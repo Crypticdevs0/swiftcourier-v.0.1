@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { mockUsers } from "@/lib/mock-data"
+import store from "@/lib/store"
 import { parseAuthToken } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find user
-    const user = mockUsers.find((u) => u.id === userId)
+    const user = await store.findUserById(userId)
 
     if (!user) {
       return NextResponse.json(
