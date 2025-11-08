@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -69,9 +69,25 @@ export default function Dashboard() {
     }
   }, [user, authLoading, router])
 
-  // Fetch packages data
-  const fetchPackages = async (showRefreshing = false, signal?: AbortSignal) => {
+  // Fetch packages data (prevent overlapping requests and properly handle aborts)
+  const controllerRef = useRef<AbortController | null>(null)
+
+  const fetchPackages = async (showRefreshing = false, externalSignal?: AbortSignal) => {
     if (!user) return
+
+    // Abort any previous internal request when starting a new one
+    if (!externalSignal) {
+      try {
+        controllerRef.current?.abort()
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Use the provided signal if given, otherwise create one we can control
+    const internalController = !externalSignal ? new AbortController() : undefined
+    if (internalController) controllerRef.current = internalController
+    const signal = externalSignal ?? internalController!.signal
 
     try {
       if (showRefreshing) setRefreshing(true)
@@ -137,14 +153,17 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
       setRefreshing(false)
+      // Clear our internal controller when done
+      if (!externalSignal) controllerRef.current = null
     }
   }
 
   useEffect(() => {
     if (user) {
-      const controller = new AbortController()
-      fetchPackages(false, controller.signal)
-      return () => controller.abort()
+      // Use an internal controller for the initial load so we can cancel if component unmounts
+      const initialController = new AbortController()
+      void fetchPackages(false, initialController.signal)
+      return () => initialController.abort()
     }
   }, [user])
 
@@ -153,6 +172,7 @@ export default function Dashboard() {
     if (!user) return
 
     const interval = setInterval(() => {
+      // Let fetchPackages manage cancelling previous internal requests
       fetchPackages(true)
     }, 30000)
 
