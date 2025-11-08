@@ -32,7 +32,7 @@ export function useAuth() {
     error: null,
   })
 
-  const checkAuth = useCallback(async (signal?: AbortSignal) => {
+  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
     try {
       setAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
@@ -53,12 +53,14 @@ export function useAuth() {
             loading: false,
             error: null,
           })
+          return true
         } else {
           setAuthState({
             user: null,
             loading: false,
             error: null,
           })
+          return false
         }
       } else {
         setAuthState({
@@ -66,6 +68,7 @@ export function useAuth() {
           loading: false,
           error: null,
         })
+        return false
       }
     } catch (error) {
       // Robustly detect AbortError across environments and ignore it
@@ -89,7 +92,7 @@ export function useAuth() {
         normalized.includes("signal is aborted") ||
         err?.type === "aborted"
 
-      if (isAbortError) return
+      if (isAbortError) return false
 
       console.error("Auth check failed:", error)
       setAuthState({
@@ -97,6 +100,7 @@ export function useAuth() {
         loading: false,
         error: error instanceof Error ? error.message : "Authentication failed",
       })
+      return false
     }
   }, [])
 
