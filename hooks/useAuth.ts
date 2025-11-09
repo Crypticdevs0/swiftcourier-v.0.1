@@ -33,9 +33,10 @@ export function useAuth() {
   })
 
   const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
-    try {
-      setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+    // Ensure we indicate loading while we perform the auth check
+    setAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
+    try {
       const response = await fetch("/api/auth/me", {
         method: "GET",
         credentials: "include",
@@ -92,7 +93,11 @@ export function useAuth() {
         normalized.includes("signal is aborted") ||
         err?.type === "aborted"
 
-      if (isAbortError) return false
+      if (isAbortError) {
+        // Ensure we clear the loading flag when the request is aborted
+        setAuthState((prev) => ({ ...prev, loading: false }))
+        return false
+      }
 
       console.error("Auth check failed:", error)
       setAuthState({
