@@ -9,17 +9,31 @@ export function Footer() {
           {/* Company Info */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <img src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800" alt="Swift Courier logo" className="h-6 w-6 object-contain" />
+              <img
+                src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800"
+                alt="Swift Courier logo"
+                className="h-6 w-6 object-contain"
+                width={24}
+                height={24}
+              />
               <span className="text-lg font-bold">Swift Courier</span>
             </div>
             <p className="text-gray-300 mb-4">
               Your trusted delivery partner since 2020. Fast, reliable, and secure delivery services nationwide.
             </p>
             <div className="flex space-x-4">
-              <Facebook className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Twitter className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Instagram className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Linkedin className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+              <Link href="https://facebook.com" aria-label="Facebook">
+                <Facebook className="h-5 w-5 text-gray-400 hover:text-blue-400" />
+              </Link>
+              <Link href="https://twitter.com" aria-label="Twitter">
+                <Twitter className="h-5 w-5 text-gray-400 hover:text-blue-400" />
+              </Link>
+              <Link href="https://instagram.com" aria-label="Instagram">
+                <Instagram className="h-5 w-5 text-gray-400 hover:text-blue-400" />
+              </Link>
+              <Link href="https://linkedin.com" aria-label="LinkedIn">
+                <Linkedin className="h-5 w-5 text-gray-400 hover:text-blue-400" />
+              </Link>
             </div>
           </div>
 
