@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -46,8 +47,13 @@ export function Header() {
   const router = useRouter()
 
   const handleLogout = async () => {
-    await logout()
-    router.push("/")
+    try {
+      await logout()
+      router.push("/")
+    } catch (error) {
+      console.error("Failed to logout", error)
+      // Optionally, show an error message to the user
+    }
   }
 
   // Don't render anything while loading to prevent flash
@@ -57,7 +63,13 @@ export function Header() {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" prefetch={false} className="flex items-center space-x-2">
-              <img src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800" alt="Swift Courier logo" className="h-8 w-8 object-contain" />
+              <img
+                src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800"
+                alt="Swift Courier logo"
+                className="h-8 w-8 object-contain"
+                width={32}
+                height={32}
+              />
               <span className="text-xl font-bold text-blue-600">Swift Courier</span>
             </Link>
             <div className="w-24 h-8 bg-gray-200 animate-pulse rounded" />
@@ -76,7 +88,13 @@ export function Header() {
             href={isAuthenticated ? "/dashboard" : "/"}
             className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
           >
-            <img src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800" alt="Swift Courier logo" className="h-8 w-8 object-contain" />
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2F05799316402b4bab9e7c472c8fcd658c%2F1bc7206c245f486eb504f80badcf8fd2?format=webp&width=800"
+              alt="Swift Courier logo"
+              className="h-8 w-8 object-contain"
+              width={32}
+              height={32}
+            />
             <span className="text-xl font-bold text-blue-600">Swift Courier</span>
           </Link>
 
@@ -154,7 +172,10 @@ export function Header() {
               <div className="flex items-center space-x-4">
                 {/* Search - Hidden on small screens */}
                 <div className="hidden md:flex items-center space-x-2">
-                  <Input placeholder="Track package..." className="w-48" />
+                  <Label htmlFor="search-package" className="sr-only">
+                    Search Package
+                  </Label>
+                  <Input id="search-package" placeholder="Track package..." className="w-48" />
                   <Button size="sm" variant="ghost">
                     <Search className="h-4 w-4" />
                   </Button>
@@ -437,7 +458,10 @@ export function Header() {
               {/* Guest User Actions */}
               <div className="flex items-center space-x-4">
                 <div className="hidden md:flex items-center space-x-2">
-                  <Input placeholder="Search..." className="w-48" />
+                  <Label htmlFor="search" className="sr-only">
+                    Search
+                  </Label>
+                  <Input id="search" placeholder="Search..." className="w-48" />
                   <Button size="sm" variant="ghost">
                     <Search className="h-4 w-4" />
                   </Button>

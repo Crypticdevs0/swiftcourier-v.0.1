@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Truck, MapPin, Clock, Shield, Globe } from "lucide-react"
 import Link from "next/link"
@@ -8,7 +9,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+      <section className="relative bg-gradient-to-r from-blue-700 to-blue-900 text-white py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold mb-6">Swift Courier: Your Trusted Delivery Partner</h1>
@@ -20,7 +21,16 @@ export default function HomePage() {
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-8">
               <h3 className="text-lg font-semibold mb-4">Track Your Package</h3>
               <div className="flex gap-2 max-w-md mx-auto">
-                <Input placeholder="Enter tracking number" className="bg-white text-black" />
+                <div className="w-full">
+                  <Label htmlFor="tracking-number" className="sr-only">
+                    Tracking Number
+                  </Label>
+                  <Input
+                    id="tracking-number"
+                    placeholder="Enter tracking number"
+                    className="bg-white text-black"
+                  />
+                </div>
                 <Link href="/track">
                   <Button variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
                     Track

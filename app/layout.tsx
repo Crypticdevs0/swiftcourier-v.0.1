@@ -108,12 +108,12 @@ export default function RootLayout({
           >
             <div className="min-h-screen flex flex-col">
               <Header />
-              <main className="flex-1" id="main-content">
+              <main className="flex-1" id="main-content" role="main">
                 {children}
               </main>
               <Footer />
+              <SmartChatManager />
             </div>
-            <SmartChatManager />
           </ThemeProvider>
         </ErrorBoundary>
       </body>
