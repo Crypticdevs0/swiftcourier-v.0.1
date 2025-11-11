@@ -31,8 +31,8 @@ export default function TrackPage() {
     }
 
     // Basic validation for Swift Courier tracking numbers
-    if (!trackingNum.toUpperCase().startsWith("SC") || trackingNum.length < 8) {
-      setError("Please enter a valid Swift Courier tracking number (starts with SC)")
+    if (!trackingNum.toUpperCase().startsWith("SC") || trackingNum.length !== 12) {
+      setError("Please enter a valid 12-character Swift Courier tracking number (e.g., SC1234567890)")
       return
     }
 
