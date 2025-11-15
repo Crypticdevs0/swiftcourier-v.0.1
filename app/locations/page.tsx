@@ -1,16 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapPin, Clock, Phone, Navigation, Filter } from "lucide-react"
+import { MapPin, Clock, Phone, Navigation, Filter, Navigation2 } from "lucide-react"
 
 export default function LocationsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedService, setSelectedService] = useState("all")
+  const [selectedLocation, setSelectedLocation] = useState<number | null>(null)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   const locations = [
     {
@@ -24,8 +26,11 @@ export default function LocationsPage() {
         sunday: "Closed",
       },
       services: ["Package Drop-off", "Package Pickup", "SwiftShip Kiosk", "Stamps"],
-      distance: "0.5 miles",
+      distance: 0.5,
       isOpen: true,
+      lat: 40.7128,
+      lng: -74.006,
+      type: "full-service",
     },
     {
       id: 2,
@@ -38,8 +43,11 @@ export default function LocationsPage() {
         sunday: "10:00 AM - 3:00 PM",
       },
       services: ["Package Drop-off", "Package Pickup", "Business Services", "International Shipping"],
-      distance: "1.2 miles",
+      distance: 1.2,
       isOpen: true,
+      lat: 40.758,
+      lng: -73.9855,
+      type: "business",
     },
     {
       id: 3,
@@ -52,8 +60,11 @@ export default function LocationsPage() {
         sunday: "9:00 AM - 4:00 PM",
       },
       services: ["24/7 Drop Box", "Express Services", "Large Package Handling"],
-      distance: "2.1 miles",
+      distance: 2.1,
       isOpen: false,
+      lat: 40.7505,
+      lng: -73.9972,
+      type: "express",
     },
     {
       id: 4,
@@ -66,8 +77,28 @@ export default function LocationsPage() {
         sunday: "11:00 AM - 7:00 PM",
       },
       services: ["SwiftShip Kiosk", "Package Pickup", "Stamps"],
-      distance: "3.5 miles",
+      distance: 3.5,
       isOpen: true,
+      lat: 40.7614,
+      lng: -73.9776,
+      type: "kiosk",
+    },
+    {
+      id: 5,
+      name: "Swift Courier - Brooklyn Branch",
+      address: "555 Atlantic Ave, Brooklyn, NY 11217",
+      phone: "(555) 456-7890",
+      hours: {
+        weekday: "8:00 AM - 5:00 PM",
+        saturday: "9:00 AM - 3:00 PM",
+        sunday: "Closed",
+      },
+      services: ["Package Drop-off", "Package Pickup", "International Shipping"],
+      distance: 2.8,
+      isOpen: true,
+      lat: 40.6751,
+      lng: -73.9776,
+      type: "branch",
     },
   ]
 
@@ -81,7 +112,39 @@ export default function LocationsPage() {
       location.services.some((service) => service.toLowerCase().includes(selectedService.toLowerCase()))
 
     return matchesSearch && matchesService
-  })
+  }).sort((a, b) => a.distance - b.distance)
+
+  useEffect(() => {
+    // Simulate getting user location
+    setUserLocation({ lat: 40.7128, lng: -74.006 })
+  }, [])
+
+  const getLocationTypeColor = (type: string) => {
+    switch (type) {
+      case "full-service":
+        return "bg-blue-100 text-blue-800"
+      case "express":
+        return "bg-red-100 text-red-800"
+      case "business":
+        return "bg-green-100 text-green-800"
+      case "kiosk":
+        return "bg-purple-100 text-purple-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const handleGetDirections = (address: string) => {
+    // Open in Google Maps
+    const query = encodeURIComponent(address)
+    window.open(`https://www.google.com/maps/search/${query}`, "_blank")
+  }
+
+  const handleCall = (phone: string) => {
+    if (phone !== "Self-Service") {
+      window.location.href = `tel:${phone.replace(/[^\d-]/g, "")}`
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -118,20 +181,64 @@ export default function LocationsPage() {
                   <SelectItem value="kiosk">SwiftShip Kiosk</SelectItem>
                   <SelectItem value="business">Business Services</SelectItem>
                   <SelectItem value="international">International</SelectItem>
+                  <SelectItem value="express">Express Services</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Map Placeholder */}
+        {/* Map Section */}
         <Card className="mb-8">
           <CardContent className="p-0">
-            <div className="h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600">Interactive map would be displayed here</p>
-                <p className="text-sm text-gray-500">Showing {filteredLocations.length} locations near you</p>
+            <div className="h-96 bg-gradient-to-br from-blue-100 via-blue-50 to-blue-100 rounded-lg flex items-center justify-center relative overflow-hidden">
+              {/* Map background */}
+              <div className="absolute inset-0 opacity-20">
+                <svg className="w-full h-full" viewBox="0 0 800 600">
+                  <g stroke="#cbd5e1" strokeWidth="1" fill="none">
+                    {/* Grid lines */}
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <line key={`v-${i}`} x1={i * 100} y1="0" x2={i * 100} y2="600" />
+                    ))}
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <line key={`h-${i}`} x1="0" y1={i * 100} x2="800" y2={i * 100} />
+                    ))}
+                  </g>
+                </svg>
+              </div>
+
+              {/* Location pins */}
+              <div className="absolute inset-0">
+                {filteredLocations.map((location, index) => {
+                  const x = ((location.lng + 74.006) * 400)
+                  const y = ((40.7614 - location.lat) * 400)
+                  
+                  return (
+                    <button
+                      key={location.id}
+                      onClick={() => setSelectedLocation(location.id)}
+                      className="absolute transform -translate-x-1/2 -translate-y-full hover:scale-110 transition-transform"
+                      style={{
+                        left: `${(x % 400) + 50}%`,
+                        top: `${(y % 300) + 30}%`,
+                      }}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg ${
+                        selectedLocation === location.id 
+                          ? "bg-red-600 scale-125" 
+                          : "bg-blue-600"
+                      }`}>
+                        {index + 1}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs">
+                <p className="font-semibold mb-2">Found {filteredLocations.length} locations</p>
+                <p className="text-gray-600">Click on pins to view details</p>
               </div>
             </div>
           </CardContent>
@@ -141,19 +248,28 @@ export default function LocationsPage() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Nearby Locations ({filteredLocations.length})</h2>
-            <Button variant="outline">
+            <Button variant="outline" size="sm">
               <Navigation className="mr-2 h-4 w-4" />
-              Get Directions
+              Sort by Distance
             </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredLocations.map((location) => (
-              <Card key={location.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={location.id} 
+                className={`hover:shadow-lg transition-all cursor-pointer ${selectedLocation === location.id ? "ring-2 ring-blue-500" : ""}`}
+                onClick={() => setSelectedLocation(location.id)}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{location.name}</CardTitle>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {location.name}
+                        <Badge className={getLocationTypeColor(location.type)} variant="secondary">
+                          {location.type === "full-service" ? "Full Service" : location.type === "express" ? "Express" : location.type.charAt(0).toUpperCase() + location.type.slice(1)}
+                        </Badge>
+                      </CardTitle>
                       <CardDescription className="flex items-center mt-1">
                         <MapPin className="mr-1 h-4 w-4" />
                         {location.address}
@@ -163,7 +279,7 @@ export default function LocationsPage() {
                       <Badge variant={location.isOpen ? "default" : "secondary"}>
                         {location.isOpen ? "Open" : "Closed"}
                       </Badge>
-                      <p className="text-sm text-gray-600 mt-1">{location.distance}</p>
+                      <p className="text-sm text-gray-600 mt-1 font-semibold">{location.distance} miles</p>
                     </div>
                   </div>
                 </CardHeader>
@@ -183,10 +299,10 @@ export default function LocationsPage() {
                           <strong>Mon-Fri:</strong> {location.hours.weekday}
                         </p>
                         <p>
-                          <strong>Saturday:</strong> {location.hours.saturday}
+                          <strong>Sat:</strong> {location.hours.saturday}
                         </p>
                         <p>
-                          <strong>Sunday:</strong> {location.hours.sunday}
+                          <strong>Sun:</strong> {location.hours.sunday}
                         </p>
                       </div>
                     </div>
@@ -205,11 +321,27 @@ export default function LocationsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="flex-1">
-                        <Navigation className="mr-1 h-3 w-3" />
+                      <Button 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleGetDirections(location.address)
+                        }}
+                      >
+                        <Navigation2 className="mr-1 h-3 w-3" />
                         Directions
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCall(location.phone)
+                        }}
+                        disabled={location.phone === "Self-Service"}
+                      >
                         <Phone className="mr-1 h-3 w-3" />
                         Call
                       </Button>
@@ -234,21 +366,21 @@ export default function LocationsPage() {
                   <MapPin className="h-6 w-6 text-blue-600" />
                 </div>
                 <h4 className="font-medium mb-2">Drop Boxes</h4>
-                <p className="text-sm text-gray-600">24/7 secure drop boxes at convenient locations</p>
+                <p className="text-sm text-gray-600">24/7 secure drop boxes at convenient locations. No human interaction needed.</p>
               </div>
               <div className="text-center p-4">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Clock className="h-6 w-6 text-green-600" />
                 </div>
-                <h4 className="font-medium mb-2">Pickup Service</h4>
-                <p className="text-sm text-gray-600">Schedule free pickup from your location</p>
+                <h4 className="font-medium mb-2">Scheduled Pickup</h4>
+                <p className="text-sm text-gray-600">Schedule free pickup from your location at a time that works for you.</p>
               </div>
               <div className="text-center p-4">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Phone className="h-6 w-6 text-purple-600" />
                 </div>
-                <h4 className="font-medium mb-2">Mobile Service</h4>
-                <p className="text-sm text-gray-600">On-demand service for business customers</p>
+                <h4 className="font-medium mb-2">Call for Help</h4>
+                <p className="text-sm text-gray-600">On-demand service for business customers. Call 1-800-SWIFT-123.</p>
               </div>
             </div>
           </CardContent>
