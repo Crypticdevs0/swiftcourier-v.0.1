@@ -1,38 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as jwt from "jsonwebtoken"
 import store from "@/lib/store"
-
-// Simple registration validation
-const validateRegistrationInput = (data: any) => {
-  const errors: { [key: string]: string[] } = {}
-
-  if (!data.firstName || typeof data.firstName !== "string" || data.firstName.trim().length < 2) {
-    errors.firstName = ["First name must be at least 2 characters"]
-  }
-
-  if (!data.lastName || typeof data.lastName !== "string" || data.lastName.trim().length < 2) {
-    errors.lastName = ["Last name must be at least 2 characters"]
-  }
-
-  if (!data.email || typeof data.email !== "string") {
-    errors.email = ["Email is required"]
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = ["Invalid email format"]
-  }
-
-  if (!data.password || typeof data.password !== "string" || data.password.length < 6) {
-    errors.password = ["Password must be at least 6 characters"]
-  }
-
-  if (data.password !== data.confirmPassword) {
-    errors.confirmPassword = ["Passwords do not match"]
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  }
-}
+import { sanitizeRegistrationInput, validatePasswordStrength } from "@/lib/sanitize"
 
 export async function POST(request: NextRequest) {
   try {
