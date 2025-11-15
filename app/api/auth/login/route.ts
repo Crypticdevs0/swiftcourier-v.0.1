@@ -1,25 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as jwt from "jsonwebtoken"
 import store from "@/lib/store"
-
-// Simple login validation schema
-const validateLoginInput = (data: any) => {
-  const errors: string[] = []
-
-  if (!data.email || typeof data.email !== "string") {
-    errors.push("Email is required")
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.push("Invalid email format")
-  }
-
-  if (!data.password || typeof data.password !== "string") {
-    errors.push("Password is required")
-  } else if (data.password.length < 3) {
-    errors.push("Password must be at least 3 characters")
-  }
-
-  return { isValid: errors.length === 0, errors }
-}
+import { sanitizeLoginInput } from "@/lib/sanitize"
 
 export async function POST(request: NextRequest) {
   try {
