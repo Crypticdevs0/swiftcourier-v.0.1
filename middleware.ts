@@ -50,20 +50,47 @@ export function middleware(request: NextRequest) {
     )
   }
 
-  // Lightweight admin guard: server-side protect /admin routes by requiring an auth cookie.
+  // Lightweight authentication guard: server-side protect authenticated routes.
   // This is intentionally minimal (edge-compatible) and only checks presence of cookie.
   try {
     const pathname = request.nextUrl.pathname
-    if (pathname.startsWith("/admin")) {
+
+    // Protected routes that require authentication
+    const protectedRoutes = [
+      "/dashboard",
+      "/profile",
+      "/settings",
+      "/shipping/create",
+      "/track",
+      "/search",
+      "/business",
+      "/store",
+      "/checkout",
+      "/admin",
+    ]
+
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+
+    if (isProtectedRoute) {
       const hasAuth = !!request.cookies.get("auth-token")
       if (!hasAuth) {
-        const loginUrl = new URL("/admin/login", request.url)
-        return NextResponse.redirect(loginUrl)
+        // Redirect to auth page, preserving the original destination
+        const authUrl = new URL("/auth", request.url)
+        authUrl.searchParams.set("redirect", pathname)
+        return NextResponse.redirect(authUrl)
+      }
+    }
+
+    // Redirect authenticated users away from auth page
+    if (pathname === "/auth" || pathname === "/login" || pathname === "/register") {
+      const hasAuth = !!request.cookies.get("auth-token")
+      if (hasAuth) {
+        return NextResponse.redirect(new URL("/dashboard", request.url))
       }
     }
   } catch (err) {
     // If anything goes wrong, allow the request to proceed but log in server logs
-    console.error("Middleware admin guard error:", err)
+    console.error("Middleware auth guard error:", err)
   }
 
   return response
