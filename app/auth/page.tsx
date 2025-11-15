@@ -228,7 +228,7 @@ export default function AuthPage() {
   }
 
   // Check for reset token in URL
-  React.useEffect(() => {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const token = params.get("token")
     if (token) {
