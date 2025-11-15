@@ -473,10 +473,35 @@ export default function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-slate-500">
-                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">Package Management</p>
-                  <p className="text-sm">Advanced package management features coming soon</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b">
+                      <tr>
+                        <th className="text-left py-3 px-4">Tracking #</th>
+                        <th className="text-left py-3 px-4">Customer</th>
+                        <th className="text-left py-3 px-4">Status</th>
+                        <th className="text-left py-3 px-4">Destination</th>
+                        <th className="text-left py-3 px-4">Value</th>
+                        <th className="text-left py-3 px-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentShipments.map((shipment) => (
+                        <tr key={shipment.id} className="border-b hover:bg-slate-50">
+                          <td className="py-3 px-4 font-medium">{shipment.id}</td>
+                          <td className="py-3 px-4">{shipment.customer}</td>
+                          <td className="py-3 px-4">
+                            <Badge className={getStatusColor(shipment.status)}>{shipment.status}</Badge>
+                          </td>
+                          <td className="py-3 px-4">{shipment.destination}</td>
+                          <td className="py-3 px-4">${shipment.amount.toFixed(2)}</td>
+                          <td className="py-3 px-4">
+                            <Button variant="ghost" size="sm">View</Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
@@ -507,42 +532,159 @@ export default function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-slate-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">User Management</p>
-                  <p className="text-sm">Advanced user management features coming soon</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b">
+                      <tr>
+                        <th className="text-left py-3 px-4">Name</th>
+                        <th className="text-left py-3 px-4">Email</th>
+                        <th className="text-left py-3 px-4">Role</th>
+                        <th className="text-left py-3 px-4">Status</th>
+                        <th className="text-left py-3 px-4">Joined</th>
+                        <th className="text-left py-3 px-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { id: 1, name: "Alice Johnson", email: "alice@swift.com", role: "admin", status: "Active", joined: "Jan 2024" },
+                        { id: 2, name: "Bob Smith", email: "bob@swift.com", role: "manager", status: "Active", joined: "Feb 2024" },
+                        { id: 3, name: "Carol Davis", email: "carol@swift.com", role: "support", status: "Active", joined: "Mar 2024" },
+                        { id: 4, name: "David Wilson", email: "david@swift.com", role: "user", status: "Inactive", joined: "Apr 2024" },
+                      ].map((user) => (
+                        <tr key={user.id} className="border-b hover:bg-slate-50">
+                          <td className="py-3 px-4 font-medium">{user.name}</td>
+                          <td className="py-3 px-4">{user.email}</td>
+                          <td className="py-3 px-4">
+                            <Badge variant="outline" className="capitalize">{user.role}</Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant={user.status === "Active" ? "default" : "secondary"}>{user.status}</Badge>
+                          </td>
+                          <td className="py-3 px-4">{user.joined}</td>
+                          <td className="py-3 px-4">
+                            <Button variant="ghost" size="sm">Edit</Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle>Daily Shipments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-48 bg-gradient-to-t from-blue-100 to-blue-50 rounded-lg flex items-end justify-around p-4 gap-2">
+                    {[45, 62, 38, 75, 58, 82, 71].map((height, i) => (
+                      <div key={i} className="flex-1 bg-blue-500 rounded-t" style={{ height: `${height}%` }} />
+                    ))}
+                  </div>
+                  <div className="flex justify-around text-xs text-gray-600 mt-3">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                      <span key={day}>{day}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle>Revenue Trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-48 bg-gradient-to-t from-green-100 to-green-50 rounded-lg flex items-end justify-around p-4 gap-2">
+                    {[35, 48, 55, 62, 70, 85, 92].map((height, i) => (
+                      <div key={i} className="flex-1 bg-green-500 rounded-t" style={{ height: `${height}%` }} />
+                    ))}
+                  </div>
+                  <div className="flex justify-around text-xs text-gray-600 mt-3">
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"].map((month) => (
+                      <span key={month}>{month}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl">Analytics & Reports</CardTitle>
-                <CardDescription>Comprehensive analytics and business intelligence</CardDescription>
+                <CardTitle>Top Routes</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-slate-500">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">Advanced Analytics</p>
-                  <p className="text-sm">Detailed analytics dashboard coming soon</p>
+                <div className="space-y-3">
+                  {[
+                    { route: "NYC → LA", packages: 1247, revenue: "$15,430" },
+                    { route: "Chicago → Miami", packages: 892, revenue: "$11,205" },
+                    { route: "Boston → Houston", packages: 756, revenue: "$9,450" },
+                    { route: "Seattle → Denver", packages: 624, revenue: "$7,800" },
+                  ].map((route) => (
+                    <div key={route.route} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{route.route}</p>
+                        <p className="text-sm text-gray-600">{route.packages} packages</p>
+                      </div>
+                      <p className="font-bold text-green-600">{route.revenue}</p>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="system" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {systemStatus.map((service) => (
+                <Card key={service.service} className="shadow-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-lg">{service.service}</h3>
+                      <Badge className={getStatusColor(service.status)}>{service.status}</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-sm text-gray-600">Uptime</p>
+                        <p className="text-2xl font-bold text-green-600">{service.uptime}</p>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-full"
+                          style={{ width: service.uptime }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">Last checked: Just now</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl">System Monitoring</CardTitle>
-                <CardDescription>Real-time system health and performance metrics</CardDescription>
+                <CardTitle>System Logs</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-slate-500">
-                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">System Monitoring</p>
-                  <p className="text-sm">Advanced monitoring dashboard coming soon</p>
+                <div className="space-y-2 text-sm max-h-64 overflow-y-auto">
+                  {[
+                    { time: "14:32:15", level: "INFO", message: "Backup completed successfully" },
+                    { time: "14:31:02", level: "INFO", message: "Cache cleared" },
+                    { time: "14:25:44", level: "WARNING", message: "High memory usage detected" },
+                    { time: "14:20:12", level: "INFO", message: "Database optimization started" },
+                    { time: "14:15:08", level: "INFO", message: "Load balanced across servers" },
+                  ].map((log, i) => (
+                    <div key={i} className="flex gap-3 p-2 hover:bg-slate-50 rounded">
+                      <span className="text-gray-400 font-mono">{log.time}</span>
+                      <Badge variant={log.level === "WARNING" ? "destructive" : "secondary"} className="text-xs">
+                        {log.level}
+                      </Badge>
+                      <span className="text-gray-700">{log.message}</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -554,12 +696,54 @@ export default function AdminDashboard() {
                 <CardTitle className="text-xl">System Settings</CardTitle>
                 <CardDescription>Configure system preferences and options</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-slate-500">
-                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">System Settings</p>
-                  <p className="text-sm">Configuration panel coming soon</p>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Email Settings</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium">SMTP Server</label>
+                      <Input defaultValue="smtp.swiftcourier.com" className="mt-1" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Port</label>
+                        <Input defaultValue="587" className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">From Email</label>
+                        <Input defaultValue="noreply@swiftcourier.com" className="mt-1" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <h3 className="font-semibold">API Settings</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium">API Key</label>
+                      <Input type="password" defaultValue="sk_live_xxxxxxxxxxxxxxxxxx" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Rate Limit (requests/min)</label>
+                      <Input defaultValue="1000" className="mt-1" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <h3 className="font-semibold">Maintenance</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <span className="text-sm font-medium">Enable Maintenance Mode</span>
+                      <input type="checkbox" className="h-4 w-4" />
+                    </div>
+                    <Button variant="outline" className="w-full">Clear Cache</Button>
+                    <Button variant="outline" className="w-full">Optimize Database</Button>
+                  </div>
+                </div>
+
+                <Button className="w-full mt-6">Save Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>
