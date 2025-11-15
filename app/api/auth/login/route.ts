@@ -7,20 +7,20 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate input
-    const validation = validateLoginInput(body)
-    if (!validation.isValid) {
+    // Sanitize input
+    const sanitization = sanitizeLoginInput(body)
+    if (!sanitization.sanitized) {
       return NextResponse.json(
         {
           success: false,
-          message: validation.errors[0],
-          errors: { general: validation.errors },
+          message: sanitization.errors[0],
+          errors: { general: sanitization.errors },
         },
         { status: 400 },
       )
     }
 
-    const { email, password } = body
+    const { email, password } = sanitization.sanitized
 
     // Find user (in production, hash and compare passwords)
     const user = await store.findUserByEmail(email)
