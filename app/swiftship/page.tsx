@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Package, Calculator, CreditCard, Printer, Truck } from "lucide-react"
+import { Package, Calculator, CreditCard, Printer, Truck, Loader2 } from "lucide-react"
 
 export default function SwiftShipPage() {
   const [fromAddress, setFromAddress] = useState({
@@ -235,7 +235,11 @@ export default function SwiftShipPage() {
             </Card>
 
             <Button onClick={calculateRates} disabled={isCalculating} className="w-full" size="lg">
-              <Calculator className="mr-2 h-4 w-4" />
+              {isCalculating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Calculator className="mr-2 h-4 w-4" />
+              )}
               {isCalculating ? "Calculating Rates..." : "Calculate Shipping Rates"}
             </Button>
           </div>
