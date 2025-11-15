@@ -38,6 +38,9 @@ export default function SwiftShipPage() {
   const [shippingOptions, setShippingOptions] = useState<any[]>([])
   const [selectedOption, setSelectedOption] = useState("")
   const [isCalculating, setIsCalculating] = useState(false)
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false)
+  const [isPrintingLoading, setIsPrintingLoading] = useState(false)
+  const [isPickupLoading, setIsPickupLoading] = useState(false)
 
   const calculateRates = async () => {
     setIsCalculating(true)
@@ -68,6 +71,24 @@ export default function SwiftShipPage() {
       ])
       setIsCalculating(false)
     }, 1500)
+  }
+
+  const handlePayAndPrint = async () => {
+    setIsPaymentLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    setIsPaymentLoading(false)
+  }
+
+  const handlePrintOnly = async () => {
+    setIsPrintingLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    setIsPrintingLoading(false)
+  }
+
+  const handleSchedulePickup = async () => {
+    setIsPickupLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    setIsPickupLoading(false)
   }
 
   return (
@@ -303,17 +324,29 @@ export default function SwiftShipPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Button className="w-full">
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Pay & Print Label
+                    <Button onClick={handlePayAndPrint} disabled={isPaymentLoading} className="w-full">
+                      {isPaymentLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="mr-2 h-4 w-4" />
+                      )}
+                      {isPaymentLoading ? "Processing Payment..." : "Pay & Print Label"}
                     </Button>
-                    <Button variant="outline" className="w-full">
-                      <Printer className="mr-2 h-4 w-4" />
-                      Print Label Only
+                    <Button onClick={handlePrintOnly} disabled={isPrintingLoading} variant="outline" className="w-full">
+                      {isPrintingLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Printer className="mr-2 h-4 w-4" />
+                      )}
+                      {isPrintingLoading ? "Printing Label..." : "Print Label Only"}
                     </Button>
-                    <Button variant="outline" className="w-full">
-                      <Truck className="mr-2 h-4 w-4" />
-                      Schedule Pickup
+                    <Button onClick={handleSchedulePickup} disabled={isPickupLoading} variant="outline" className="w-full">
+                      {isPickupLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Truck className="mr-2 h-4 w-4" />
+                      )}
+                      {isPickupLoading ? "Scheduling Pickup..." : "Schedule Pickup"}
                     </Button>
                   </div>
                 </CardContent>
