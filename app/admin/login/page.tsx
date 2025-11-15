@@ -371,33 +371,6 @@ export default function AdminLogin() {
             </TabsContent>
           </Tabs>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Demo Credentials
-            </h4>
-            <div className="space-y-2 text-xs text-blue-700">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Super Admin:</span>
-                <Badge variant="secondary" className="text-xs">
-                  admin / admin123
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Manager:</span>
-                <Badge variant="secondary" className="text-xs">
-                  manager / manager123
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Support:</span>
-                <Badge variant="secondary" className="text-xs">
-                  support / support123
-                </Badge>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
