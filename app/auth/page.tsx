@@ -413,18 +413,6 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials:</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <p>
-                  <strong>Admin:</strong> admin@swiftcourier.com / admin123
-                </p>
-                <p>
-                  <strong>User:</strong> user@swiftcourier.com / user123
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
