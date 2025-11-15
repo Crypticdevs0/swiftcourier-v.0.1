@@ -7,20 +7,45 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate input
-    const validation = validateRegistrationInput(body)
-    if (!validation.isValid) {
+    // Sanitize input
+    const sanitization = sanitizeRegistrationInput(body)
+    if (!sanitization.sanitized) {
       return NextResponse.json(
         {
           success: false,
           message: "Validation failed",
-          errors: validation.errors,
+          errors: { general: sanitization.errors },
         },
         { status: 400 },
       )
     }
 
-    const { firstName, lastName, email, password, phone } = body
+    const { firstName, lastName, email, password, phone } = sanitization.sanitized
+
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(password)
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: passwordValidation.errors[0],
+          errors: { password: passwordValidation.errors },
+        },
+        { status: 400 },
+      )
+    }
+
+    // Verify passwords match
+    if (password !== body.confirmPassword) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validation failed",
+          errors: { confirmPassword: ["Passwords do not match"] },
+        },
+        { status: 400 },
+      )
+    }
 
     // Check if user already exists
     const existingUser = await store.findUserByEmail(email)
