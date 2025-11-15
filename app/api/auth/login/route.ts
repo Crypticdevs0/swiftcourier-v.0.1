@@ -1,44 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as jwt from "jsonwebtoken"
 import store from "@/lib/store"
-
-// Simple login validation schema
-const validateLoginInput = (data: any) => {
-  const errors: string[] = []
-
-  if (!data.email || typeof data.email !== "string") {
-    errors.push("Email is required")
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.push("Invalid email format")
-  }
-
-  if (!data.password || typeof data.password !== "string") {
-    errors.push("Password is required")
-  } else if (data.password.length < 3) {
-    errors.push("Password must be at least 3 characters")
-  }
-
-  return { isValid: errors.length === 0, errors }
-}
+import { sanitizeLoginInput } from "@/lib/sanitize"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate input
-    const validation = validateLoginInput(body)
-    if (!validation.isValid) {
+    // Sanitize input
+    const sanitization = sanitizeLoginInput(body)
+    if (!sanitization.sanitized) {
       return NextResponse.json(
         {
           success: false,
-          message: validation.errors[0],
-          errors: { general: validation.errors },
+          message: sanitization.errors[0],
+          errors: { general: sanitization.errors },
         },
         { status: 400 },
       )
     }
 
-    const { email, password } = body
+    const { email, password } = sanitization.sanitized
 
     // Find user (in production, hash and compare passwords)
     const user = await store.findUserByEmail(email)

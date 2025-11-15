@@ -1,57 +1,51 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as jwt from "jsonwebtoken"
 import store from "@/lib/store"
-
-// Simple registration validation
-const validateRegistrationInput = (data: any) => {
-  const errors: { [key: string]: string[] } = {}
-
-  if (!data.firstName || typeof data.firstName !== "string" || data.firstName.trim().length < 2) {
-    errors.firstName = ["First name must be at least 2 characters"]
-  }
-
-  if (!data.lastName || typeof data.lastName !== "string" || data.lastName.trim().length < 2) {
-    errors.lastName = ["Last name must be at least 2 characters"]
-  }
-
-  if (!data.email || typeof data.email !== "string") {
-    errors.email = ["Email is required"]
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = ["Invalid email format"]
-  }
-
-  if (!data.password || typeof data.password !== "string" || data.password.length < 6) {
-    errors.password = ["Password must be at least 6 characters"]
-  }
-
-  if (data.password !== data.confirmPassword) {
-    errors.confirmPassword = ["Passwords do not match"]
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  }
-}
+import { sanitizeRegistrationInput, validatePasswordStrength } from "@/lib/sanitize"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate input
-    const validation = validateRegistrationInput(body)
-    if (!validation.isValid) {
+    // Sanitize input
+    const sanitization = sanitizeRegistrationInput(body)
+    if (!sanitization.sanitized) {
       return NextResponse.json(
         {
           success: false,
           message: "Validation failed",
-          errors: validation.errors,
+          errors: { general: sanitization.errors },
         },
         { status: 400 },
       )
     }
 
-    const { firstName, lastName, email, password, phone } = body
+    const { firstName, lastName, email, password, phone } = sanitization.sanitized
+
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(password)
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: passwordValidation.errors[0],
+          errors: { password: passwordValidation.errors },
+        },
+        { status: 400 },
+      )
+    }
+
+    // Verify passwords match
+    if (password !== body.confirmPassword) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validation failed",
+          errors: { confirmPassword: ["Passwords do not match"] },
+        },
+        { status: 400 },
+      )
+    }
 
     // Check if user already exists
     const existingUser = await store.findUserByEmail(email)
