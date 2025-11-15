@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Package, Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, CheckCircle } from "lucide-react"
+import { Package, Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react"
 
 interface FormErrors {
   [key: string]: string[]
@@ -28,6 +28,9 @@ export default function AuthPage() {
   const { login, register, checkAuth, user: authUser } = auth
   const [showVerifyRetry, setShowVerifyRetry] = useState(false)
   const [verificationPending, setVerificationPending] = useState(false)
+  const [activeTab, setActiveTab] = useState("signin")
+  const [resetToken, setResetToken] = useState<string | null>(null)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
 
   // Sign In Form State
   const [signInData, setSignInData] = useState({
@@ -47,6 +50,16 @@ export default function AuthPage() {
     terms: false,
     marketing: false,
   })
+
+  // Reset Password Form State
+  const [resetPasswordData, setResetPasswordData] = useState({
+    password: "",
+    confirmPassword: "",
+  })
+
+  const validatePasswordLength = (password: string): boolean => {
+    return password.length >= 6
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,6 +104,20 @@ export default function AuthPage() {
       return
     }
 
+    if (!validatePasswordLength(signUpData.password)) {
+      setError("Password must be at least 6 characters")
+      setFormErrors({ password: ["Password must be at least 6 characters"] })
+      setIsLoading(false)
+      return
+    }
+
+    if (signUpData.password !== signUpData.confirmPassword) {
+      setError("Passwords do not match")
+      setFormErrors({ confirmPassword: ["Passwords do not match"] })
+      setIsLoading(false)
+      return
+    }
+
     try {
       const name = `${signUpData.firstName} ${signUpData.lastName}`.trim()
       const result = await register(signUpData.email, signUpData.password, name)
@@ -113,6 +140,102 @@ export default function AuthPage() {
       setIsLoading(false)
     }
   }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+    setFormErrors({})
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSuccess("Password reset link has been sent to your email.")
+        // In development, show the token
+        if (data.token) {
+          setResetToken(data.token)
+          setSuccess(`Password reset link: /auth?tab=reset&token=${data.token}`)
+        }
+      } else {
+        setError(data.message || "Failed to send reset link")
+      }
+    } catch (err) {
+      setError("Network error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+    setFormErrors({})
+
+    if (!validatePasswordLength(resetPasswordData.password)) {
+      setError("Password must be at least 6 characters")
+      setFormErrors({ password: ["Password must be at least 6 characters"] })
+      setIsLoading(false)
+      return
+    }
+
+    if (resetPasswordData.password !== resetPasswordData.confirmPassword) {
+      setError("Passwords do not match")
+      setFormErrors({ confirmPassword: ["Passwords do not match"] })
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: resetToken,
+          password: resetPasswordData.password,
+          confirmPassword: resetPasswordData.confirmPassword,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSuccess("Password reset successfully! Redirecting to login...")
+        setTimeout(() => {
+          setResetToken(null)
+          setResetPasswordData({ password: "", confirmPassword: "" })
+          setActiveTab("signin")
+        }, 1500)
+      } else {
+        setError(data.message || "Failed to reset password")
+      }
+    } catch (err) {
+      setError("Network error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Check for reset token in URL
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get("token")
+    if (token) {
+      setResetToken(token)
+      setActiveTab("reset")
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -176,10 +299,11 @@ export default function AuthPage() {
               </div>
             )}
 
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="forgot">Forgot Password</TabsTrigger>
               </TabsList>
 
               {/* Sign In Tab */}
@@ -241,7 +365,11 @@ export default function AuthPage() {
                         Remember me
                       </label>
                     </div>
-                    <button type="button" className="text-sm text-blue-600 hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("forgot")}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
                       Forgot password?
                     </button>
                   </div>
@@ -328,14 +456,14 @@ export default function AuthPage() {
 
                   <div className="space-y-2">
                     <label htmlFor="signup-password" className="text-sm font-medium">
-                      Password
+                      Password (minimum 6 characters)
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       <Input
                         id="signup-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Create a password"
+                        placeholder="Create a password (min 6 characters)"
                         className="pl-10 pr-10"
                         value={signUpData.password}
                         onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
@@ -402,6 +530,111 @@ export default function AuthPage() {
                   </Button>
                 </form>
               </TabsContent>
+
+              {/* Forgot Password Tab */}
+              <TabsContent value="forgot">
+                {resetToken ? (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="reset-password" className="text-sm font-medium">
+                        New Password (minimum 6 characters)
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="reset-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter new password (min 6 characters)"
+                          className="pl-10 pr-10"
+                          value={resetPasswordData.password}
+                          onChange={(e) => setResetPasswordData({ ...resetPasswordData, password: e.target.value })}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {formErrors.password && <p className="text-sm text-red-600">{formErrors.password[0]}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="reset-confirm-password" className="text-sm font-medium">
+                        Confirm New Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="reset-confirm-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Confirm new password"
+                          className="pl-10"
+                          value={resetPasswordData.confirmPassword}
+                          onChange={(e) => setResetPasswordData({ ...resetPasswordData, confirmPassword: e.target.value })}
+                          required
+                        />
+                      </div>
+                      {formErrors.confirmPassword && (
+                        <p className="text-sm text-red-600">{formErrors.confirmPassword[0]}</p>
+                      )}
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Resetting password..." : "Reset Password"}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => setResetToken(null)}
+                      className="w-full inline-flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 py-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Sign In
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enter your email address and we'll send you a link to reset your password.
+                    </p>
+
+                    <div className="space-y-2">
+                      <label htmlFor="forgot-email" className="text-sm font-medium">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="forgot-email"
+                          type="email"
+                          placeholder="Enter your email"
+                          className="pl-10"
+                          value={forgotPasswordEmail}
+                          onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      {formErrors.email && <p className="text-sm text-red-600">{formErrors.email[0]}</p>}
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("signin")}
+                      className="w-full inline-flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 py-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Sign In
+                    </button>
+                  </form>
+                )}
+              </TabsContent>
             </Tabs>
 
             <div className="mt-6">
@@ -412,7 +645,6 @@ export default function AuthPage() {
                 </p>
               </div>
             </div>
-
           </CardContent>
         </Card>
       </div>
