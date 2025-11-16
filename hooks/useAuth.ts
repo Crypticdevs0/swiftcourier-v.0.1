@@ -33,11 +33,7 @@ export function useAuth() {
   })
 
   const isMountedRef = useRef(true)
-
-  const safeSetAuthState = useCallback((newState: AuthState | ((prev: AuthState) => AuthState)) => {
-    if (!isMountedRef.current) return
-    setAuthState(newState)
-  }, [])
+  const initializeRef = useRef(false)
 
   const checkAuth = useCallback(async (signal?: AbortSignal): Promise<{ success: boolean; user?: User; error?: string }> => {
     try {
