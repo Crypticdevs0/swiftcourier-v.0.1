@@ -261,13 +261,13 @@ export function useAuth() {
 
   useEffect(() => {
     const controller = new AbortController()
-    let isMounted = true
+    const isMountedRef = { current: true }
 
     void (async () => {
       try {
-        await checkAuth(controller.signal)
+        await checkAuth(controller.signal, isMountedRef)
       } catch (err) {
-        if (!isMounted) return
+        if (!isMountedRef.current) return
 
         const e = err as any
         const msg = e && (e.message || e.name) ? String(e.message || e.name).toLowerCase() : ""
@@ -284,7 +284,7 @@ export function useAuth() {
     })()
 
     return () => {
-      isMounted = false
+      isMountedRef.current = false
       controller.abort()
     }
   }, [checkAuth])
