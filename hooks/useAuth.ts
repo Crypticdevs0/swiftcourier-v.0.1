@@ -236,14 +236,14 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })
 
-      setAuthState({
+      safeSetAuthState({
         user: null,
         loading: false,
         error: null,
@@ -253,14 +253,14 @@ export function useAuth() {
     } catch (error) {
       console.error("Logout failed:", error)
       // Even if logout fails, clear local state
-      setAuthState({
+      safeSetAuthState({
         user: null,
         loading: false,
         error: null,
       })
       return { success: true }
     }
-  }, [])
+  }, [safeSetAuthState])
 
   const clearError = useCallback(() => {
     setAuthState((prev) => ({ ...prev, error: null }))
