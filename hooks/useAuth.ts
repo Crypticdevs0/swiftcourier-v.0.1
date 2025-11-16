@@ -35,6 +35,11 @@ export function useAuth() {
   const isMountedRef = useRef(true)
   const initializeRef = useRef(false)
 
+  const safeSetAuthState = (newState: AuthState | ((prev: AuthState) => AuthState)) => {
+    if (!isMountedRef.current) return
+    setAuthState(newState)
+  }
+
   const checkAuth = useCallback(async (signal?: AbortSignal): Promise<{ success: boolean; user?: User; error?: string }> => {
     try {
       const response = await fetch("/api/auth/me", {
