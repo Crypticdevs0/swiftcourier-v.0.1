@@ -1,4 +1,4 @@
-import { mockPackages, mockUsers, findUserByEmail as mdFindUserByEmail, findUserById as mdFindUserById, createUser as mdCreateUser, updateUserLastLogin as mdUpdateUserLastLogin, getPackageByTrackingNumber as mdGetPackageByTrackingNumber, addTrackingEvent as mdAddTrackingEvent, generateMockPackages } from "./mock-data"
+import { mockPackages, mockUsers, findUserByEmail as mdFindUserByEmail, findUserById as mdFindUserById, createUser as mdCreateUser, updateUserLastLogin as mdUpdateUserLastLogin, getPackageByTrackingNumber as mdGetPackageByTrackingNumber, addTrackingEvent as mdAddTrackingEvent, createPackage as mdCreatePackage, generateMockPackages } from "./mock-data"
 import type { User, Package } from "./mock-data"
 import fs from "fs"
 import path from "path"
@@ -11,6 +11,7 @@ export type Store = {
   updateUserLastLogin: (userId: string) => void
   getPackageByTrackingNumber: (trackingNumber: string) => Package | undefined
   addTrackingEvent: (trackingNumber: string, event: Package["events"][0]) => boolean
+  createPackage: (packageData: Omit<Package, "id" | "updatedAt">) => Package
   getAllPackages: () => Package[]
   seedInMemory: () => { seeded_in_memory: { users: number; packages: number; events: number }; sql_available: boolean }
   generateMockPackages?: (userType: "new" | "demo" | "existing", userId?: string) => Package[]
@@ -41,6 +42,9 @@ const inMemoryAdapter: Store = {
   },
   addTrackingEvent(trackingNumber: string, event) {
     return mdAddTrackingEvent(trackingNumber, event)
+  },
+  createPackage(packageData) {
+    return mdCreatePackage(packageData)
   },
   getAllPackages() {
     return mockPackages

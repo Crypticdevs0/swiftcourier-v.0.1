@@ -107,13 +107,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new package (mock implementation)
-    const newPackage = {
+    // Create new package
+    const newPackage = await store.createPackage({
       trackingNumber: "SW" + Math.random().toString(36).substr(2, 9).toUpperCase(),
       status: "pending",
       estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      currentLocation: "Package created - awaiting pickup",
-      progress: 0,
       recipient: body.recipient,
       sender: {
         name: user.name,
@@ -123,11 +121,10 @@ export async function POST(request: NextRequest) {
         zip: body.sender?.zip || "",
       },
       service: body.service || "Swift Standard",
-      weight: body.weight || 1,
-      dimensions: body.dimensions || { length: 10, width: 8, height: 4 },
+      weight: body.weight ? String(body.weight) : "1 lbs",
+      dimensions: body.dimensions ? JSON.stringify(body.dimensions) : "10x8x4 inches",
       events: [
         {
-          id: "1",
           timestamp: new Date().toISOString(),
           location: "Origin facility",
           description: "Package created",
@@ -135,9 +132,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       createdAt: new Date().toISOString(),
-      userId: user.id,
       cost: body.cost || 15.99,
-    }
+    })
 
     // Update user type if they were new
     if (user.userType === "new") {
