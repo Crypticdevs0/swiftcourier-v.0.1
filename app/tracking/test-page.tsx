@@ -10,8 +10,6 @@ export default function TestTrackPage() {
   const [debugInfo, setDebugInfo] = useState("")
 
   const handleTrack = () => {
-    console.log("handleTrack called")
-    alert("Button clicked!")
     setDebugInfo("Button clicked!")
     setIsLoading(true)
     

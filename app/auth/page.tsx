@@ -251,8 +251,8 @@ export default function AuthPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
+            <CardTitle>Staff & Administrator Login</CardTitle>
+            <CardDescription>Access restricted to authorized personnel only</CardDescription>
           </CardHeader>
           <CardContent>
             {/* Success Message */}
@@ -300,9 +300,8 @@ export default function AuthPage() {
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 <TabsTrigger value="forgot">Forgot Password</TabsTrigger>
               </TabsList>
 
@@ -380,156 +379,7 @@ export default function AuthPage() {
                 </form>
               </TabsContent>
 
-              {/* Sign Up Tab */}
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="first-name" className="text-sm font-medium">
-                        First Name
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          id="first-name"
-                          placeholder="First name"
-                          className="pl-10"
-                          value={signUpData.firstName}
-                          onChange={(e) => setSignUpData({ ...signUpData, firstName: e.target.value })}
-                          required
-                        />
-                      </div>
-                      {formErrors.firstName && <p className="text-sm text-red-600">{formErrors.firstName[0]}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="last-name" className="text-sm font-medium">
-                        Last Name
-                      </label>
-                      <Input
-                        id="last-name"
-                        placeholder="Last name"
-                        value={signUpData.lastName}
-                        onChange={(e) => setSignUpData({ ...signUpData, lastName: e.target.value })}
-                        required
-                      />
-                      {formErrors.lastName && <p className="text-sm text-red-600">{formErrors.lastName[0]}</p>}
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="signup-email" className="text-sm font-medium">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        className="pl-10"
-                        value={signUpData.email}
-                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                        required
-                      />
-                    </div>
-                    {formErrors.email && <p className="text-sm text-red-600">{formErrors.email[0]}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="phone" className="text-sm font-medium">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="Enter your phone number"
-                        className="pl-10"
-                        value={signUpData.phone}
-                        onChange={(e) => setSignUpData({ ...signUpData, phone: e.target.value })}
-                        required
-                      />
-                    </div>
-                    {formErrors.phone && <p className="text-sm text-red-600">{formErrors.phone[0]}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="signup-password" className="text-sm font-medium">
-                      Password (minimum 6 characters)
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a password (min 6 characters)"
-                        className="pl-10 pr-10"
-                        value={signUpData.password}
-                        onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {formErrors.password && <p className="text-sm text-red-600">{formErrors.password[0]}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="confirm-password" className="text-sm font-medium">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        id="confirm-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
-                        className="pl-10"
-                        value={signUpData.confirmPassword}
-                        onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
-                        required
-                      />
-                    </div>
-                    {formErrors.confirmPassword && (
-                      <p className="text-sm text-red-600">{formErrors.confirmPassword[0]}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="terms"
-                        checked={signUpData.terms}
-                        onCheckedChange={(checked) => setSignUpData({ ...signUpData, terms: !!checked })}
-                        required
-                      />
-                      <label htmlFor="terms" className="text-sm text-gray-600">
-                        I agree to the Terms of Service and Privacy Policy
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="marketing"
-                        checked={signUpData.marketing}
-                        onCheckedChange={(checked) => setSignUpData({ ...signUpData, marketing: !!checked })}
-                      />
-                      <label htmlFor="marketing" className="text-sm text-gray-600">
-                        Send me promotional emails and updates
-                      </label>
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Create Account"}
-                  </Button>
-                </form>
-              </TabsContent>
 
               {/* Forgot Password Tab */}
               <TabsContent value="forgot">

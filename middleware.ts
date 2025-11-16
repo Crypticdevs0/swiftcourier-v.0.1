@@ -73,7 +73,6 @@ export function middleware(request: NextRequest) {
       "/profile",
       "/settings",
       "/shipping/create",
-      "/track",
       "/search",
       "/business",
       "/store",
@@ -81,9 +80,34 @@ export function middleware(request: NextRequest) {
       "/admin",
     ]
 
-    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+    // Public routes that should NOT require authentication
+    const publicRoutes = [
+      "/tracking",
+      "/track",
+      "/",
+      "/rates",
+      "/locations",
+      "/schedule-pickup",
+      "/swiftship",
+      "/international",
+      "/faq",
+      "/support",
+      "/claims",
+      "/careers",
+      "/privacy",
+      "/terms",
+      "/accessibility",
+      "/security",
+      "/swift-box",
+      "/swift-preview",
+      "/mobile"
+    ]
 
-    if (isProtectedRoute) {
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+
+    // Only protect routes that are explicitly protected and not explicitly public
+    if (isProtectedRoute && !isPublicRoute) {
       const hasAuth = !!request.cookies.get("auth-token")
       if (!hasAuth) {
         // Redirect to auth page, preserving the original destination
