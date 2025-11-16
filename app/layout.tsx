@@ -3,8 +3,9 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { HeaderWrapper } from "@/components/header-wrapper"
+import { SmartChatManager } from "@/components/smart-chat-manager"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SmartChatManagerWrapper } from "@/components/smart-chat-manager-wrapper"
 
@@ -107,7 +108,7 @@ export default function RootLayout({
             storageKey="swift-courier-theme"
           >
             <div className="min-h-screen flex flex-col">
-              <Header />
+              <HeaderWrapper />
               <main className="flex-1" id="main-content" role="main">
                 {children}
               </main>
