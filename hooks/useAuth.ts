@@ -245,7 +245,10 @@ export function useAuth() {
   }, [safeSetAuthState])
 
   useEffect(() => {
+    if (initializeRef.current) return
+
     isMountedRef.current = true
+    initializeRef.current = true
     const controller = new AbortController()
 
     const initAuth = async () => {
@@ -255,29 +258,23 @@ export function useAuth() {
         if (!isMountedRef.current) return
 
         if (result.success && result.user) {
-          if (isMountedRef.current) {
-            setAuthState({
-              user: result.user,
-              loading: false,
-              error: null,
-            })
-          }
+          setAuthState({
+            user: result.user,
+            loading: false,
+            error: null,
+          })
         } else if (result.error) {
-          if (isMountedRef.current) {
-            setAuthState({
-              user: null,
-              loading: false,
-              error: result.error,
-            })
-          }
+          setAuthState({
+            user: null,
+            loading: false,
+            error: result.error,
+          })
         } else {
-          if (isMountedRef.current) {
-            setAuthState({
-              user: null,
-              loading: false,
-              error: null,
-            })
-          }
+          setAuthState({
+            user: null,
+            loading: false,
+            error: null,
+          })
         }
       } catch (err) {
         if (isMountedRef.current) {
