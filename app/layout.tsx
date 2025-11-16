@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { SmartChatManager } from "@/components/smart-chat-manager"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { SmartChatManagerWrapper } from "@/components/smart-chat-manager-wrapper"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -112,7 +113,7 @@ export default function RootLayout({
                 {children}
               </main>
               <Footer />
-              <SmartChatManager />
+              <SmartChatManagerWrapper />
             </div>
           </ThemeProvider>
         </ErrorBoundary>
