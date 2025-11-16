@@ -39,20 +39,7 @@ export function useAuth() {
     setAuthState(newState)
   }, [])
 
-  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
-    const updateState = (newState: AuthState) => {
-      if (!isMountedRef.current) return
-      setAuthState(newState)
-    }
-
-    const updateStatePartial = (partial: Partial<AuthState>) => {
-      if (!isMountedRef.current) return
-      setAuthState((prev) => ({ ...prev, ...partial }))
-    }
-
-    // Ensure we indicate loading while we perform the auth check
-    updateStatePartial({ loading: true, error: null })
-
+  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<{ success: boolean; user?: User; error?: string }> => {
     try {
       const response = await fetch("/api/auth/me", {
         method: "GET",
@@ -66,30 +53,14 @@ export function useAuth() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.user) {
-          updateState({
-            user: data.user,
-            loading: false,
-            error: null,
-          })
-          return true
+          return { success: true, user: data.user }
         } else {
-          updateState({
-            user: null,
-            loading: false,
-            error: null,
-          })
-          return false
+          return { success: false }
         }
       } else {
-        updateState({
-          user: null,
-          loading: false,
-          error: null,
-        })
-        return false
+        return { success: false }
       }
     } catch (error) {
-      // Robustly detect AbortError across environments and ignore it
       const err = error as any
       const normalized = ((): string => {
         try {
@@ -111,18 +82,14 @@ export function useAuth() {
         err?.type === "aborted"
 
       if (isAbortError) {
-        // Ensure we clear the loading flag when the request is aborted
-        updateStatePartial({ loading: false })
-        return false
+        return { success: false }
       }
 
       console.error("Auth check failed:", error)
-      updateState({
-        user: null,
-        loading: false,
+      return {
+        success: false,
         error: error instanceof Error ? error.message : "Authentication failed",
-      })
-      return false
+      }
     }
   }, [])
 
