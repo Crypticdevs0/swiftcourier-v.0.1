@@ -294,7 +294,7 @@ export function useAuth() {
       isMountedRef.current = false
       controller.abort()
     }
-  }, [])
+  }, [checkAuth])
 
   return {
     user: authState.user,
