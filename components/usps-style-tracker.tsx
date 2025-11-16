@@ -22,7 +22,10 @@ import {
   AlertCircle,
   RefreshCw,
   Loader2,
+  Navigation,
+  Zap,
 } from "lucide-react"
+import { LoadingSpinner, ProgressRing } from "./loading-spinner"
 
 interface TrackingEvent {
   id: string
@@ -211,30 +214,77 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
-        <Card className="border-0 shadow-lg">
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center space-x-2">
-              <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
-              <span>Processing Tracking Request</span>
-            </CardTitle>
-            <CardDescription>Retrieving real-time information for {trackingNumber}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <div className="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <p className="text-gray-600 font-medium mb-4">{loadingMessage}</p>
-              <div className="max-w-md mx-auto">
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Progress</span>
-                  <span>{loadingProgress}%</span>
-                </div>
-                <Progress value={loadingProgress} className="h-3" />
+            <CardTitle className="flex items-center justify-center space-x-3">
+              <div className="relative">
+                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute inset-0 w-8 h-8 border-3 border-blue-300 border-b-transparent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }}></div>
               </div>
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  <Clock className="h-4 w-4 inline mr-1" />
-                  Accessing real-time tracking data from our network of distribution centers
-                </p>
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Processing Tracking Request
+              </span>
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Retrieving real-time information for <span className="font-mono font-semibold text-blue-600">{trackingNumber}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div className="text-center">
+              {/* Modern animated tracking icon */}
+              <div className="relative mx-auto mb-8 w-24 h-24">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 animate-pulse"></div>
+                <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center">
+                  <Package className="h-8 w-8 text-blue-600 animate-bounce" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-ping">
+                  <Navigation className="h-3 w-3 text-white" />
+                </div>
+              </div>
+
+              <p className="text-gray-700 font-medium mb-6 text-lg">{loadingMessage}</p>
+              
+              {/* Enhanced progress display */}
+              <div className="max-w-md mx-auto mb-6">
+                <div className="flex items-center justify-center space-x-4 mb-4">
+                  <ProgressRing progress={loadingProgress} size={60} />
+                  <div className="text-left">
+                    <div className="text-2xl font-bold text-blue-600">{loadingProgress}%</div>
+                    <div className="text-sm text-gray-500">Complete</div>
+                  </div>
+                </div>
+                <Progress value={loadingProgress} className="h-2 bg-gray-200" />
+              </div>
+
+              {/* Status indicators */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className={`p-3 rounded-lg transition-all duration-500 ${loadingProgress >= 20 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'} border`}>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${loadingProgress >= 20 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                    <span className="text-sm font-medium">Connecting</span>
+                  </div>
+                </div>
+                <div className={`p-3 rounded-lg transition-all duration-500 ${loadingProgress >= 60 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'} border`}>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${loadingProgress >= 60 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                    <span className="text-sm font-medium">Searching</span>
+                  </div>
+                </div>
+                <div className={`p-3 rounded-lg transition-all duration-500 ${loadingProgress >= 95 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'} border`}>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${loadingProgress >= 95 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                    <span className="text-sm font-medium">Loading</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="flex items-center justify-center space-x-2 text-blue-700">
+                  <Zap className="h-4 w-4 animate-pulse" />
+                  <p className="text-sm font-medium">
+                    Accessing real-time tracking data from our network of distribution centers
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>

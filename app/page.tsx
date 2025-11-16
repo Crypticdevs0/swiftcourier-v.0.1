@@ -31,7 +31,7 @@ export default function HomePage() {
                     className="bg-white text-black"
                   />
                 </div>
-                <Link href="/track">
+                <Link href="/tracking">
                   <Button variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
                     Track
                   </Button>
