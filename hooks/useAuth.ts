@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 
 interface User {
   id: string
@@ -32,10 +32,15 @@ export function useAuth() {
     error: null,
   })
 
-  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
-    // Ensure we indicate loading while we perform the auth check
-    setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+  const isMountedRef = useRef(true)
+  const initializeRef = useRef(false)
 
+  const safeSetAuthState = (newState: AuthState | ((prev: AuthState) => AuthState)) => {
+    if (!isMountedRef.current) return
+    setAuthState(newState)
+  }
+
+  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<{ success: boolean; user?: User; error?: string }> => {
     try {
       const response = await fetch("/api/auth/me", {
         method: "GET",
@@ -49,30 +54,14 @@ export function useAuth() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.user) {
-          setAuthState({
-            user: data.user,
-            loading: false,
-            error: null,
-          })
-          return true
+          return { success: true, user: data.user }
         } else {
-          setAuthState({
-            user: null,
-            loading: false,
-            error: null,
-          })
-          return false
+          return { success: false }
         }
       } else {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: null,
-        })
-        return false
+        return { success: false }
       }
     } catch (error) {
-      // Robustly detect AbortError across environments and ignore it
       const err = error as any
       const normalized = ((): string => {
         try {
@@ -94,24 +83,20 @@ export function useAuth() {
         err?.type === "aborted"
 
       if (isAbortError) {
-        // Ensure we clear the loading flag when the request is aborted
-        setAuthState((prev) => ({ ...prev, loading: false }))
-        return false
+        return { success: false }
       }
 
       console.error("Auth check failed:", error)
-      setAuthState({
-        user: null,
-        loading: false,
+      return {
+        success: false,
         error: error instanceof Error ? error.message : "Authentication failed",
-      })
-      return false
+      }
     }
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -131,22 +116,29 @@ export function useAuth() {
         for (let i = 0; i < maxAttempts; i++) {
           // small delay to allow cookies to be set by the browser
           await new Promise((r) => setTimeout(r, i === 0 ? 200 : 500))
-          verified = await checkAuth()
-          if (verified) break
+          const result = await checkAuth()
+          if (result.success) {
+            verified = true
+            safeSetAuthState({
+              user: result.user,
+              loading: false,
+              error: null,
+            })
+            break
+          }
         }
 
         if (verified) {
-          // checkAuth already set user state
           return { success: true, user: data.user }
         }
 
         const errorMessage =
           "Authentication verification failed: no auth token received. Please ensure cookies are enabled and try again."
-        setAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+        safeSetAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
         return { success: false, error: errorMessage }
       } else {
         const errorMessage = data.error || "Login failed"
-        setAuthState((prev) => ({
+        safeSetAuthState((prev) => ({
           ...prev,
           loading: false,
           error: errorMessage,
@@ -155,18 +147,18 @@ export function useAuth() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Network error"
-      setAuthState((prev) => ({
+      safeSetAuthState((prev) => ({
         ...prev,
         loading: false,
         error: errorMessage,
       }))
       return { success: false, error: errorMessage }
     }
-  }, [checkAuth])
+  }, [checkAuth, safeSetAuthState])
 
   const register = useCallback(async (email: string, password: string, name: string) => {
     try {
-      setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -185,8 +177,16 @@ export function useAuth() {
         let verified = false
         for (let i = 0; i < maxAttempts; i++) {
           await new Promise((r) => setTimeout(r, i === 0 ? 200 : 500))
-          verified = await checkAuth()
-          if (verified) break
+          const result = await checkAuth()
+          if (result.success) {
+            verified = true
+            safeSetAuthState({
+              user: result.user,
+              loading: false,
+              error: null,
+            })
+            break
+          }
         }
 
         if (verified) {
@@ -195,11 +195,11 @@ export function useAuth() {
 
         const errorMessage =
           "Authentication verification failed: no auth token received. Please ensure cookies are enabled and try again."
-        setAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+        safeSetAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
         return { success: false, error: errorMessage }
       } else {
         const errorMessage = data.error || "Registration failed"
-        setAuthState((prev) => ({
+        safeSetAuthState((prev) => ({
           ...prev,
           loading: false,
           error: errorMessage,
@@ -208,25 +208,25 @@ export function useAuth() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Network error"
-      setAuthState((prev) => ({
+      safeSetAuthState((prev) => ({
         ...prev,
         loading: false,
         error: errorMessage,
       }))
       return { success: false, error: errorMessage }
     }
-  }, [checkAuth])
+  }, [checkAuth, safeSetAuthState])
 
   const logout = useCallback(async () => {
     try {
-      setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })
 
-      setAuthState({
+      safeSetAuthState({
         user: null,
         loading: false,
         error: null,
@@ -236,48 +236,65 @@ export function useAuth() {
     } catch (error) {
       console.error("Logout failed:", error)
       // Even if logout fails, clear local state
-      setAuthState({
+      safeSetAuthState({
         user: null,
         loading: false,
         error: null,
       })
       return { success: true }
     }
-  }, [])
+  }, [safeSetAuthState])
 
   const clearError = useCallback(() => {
-    setAuthState((prev) => ({ ...prev, error: null }))
-  }, [])
+    safeSetAuthState((prev) => ({ ...prev, error: null }))
+  }, [safeSetAuthState])
 
   useEffect(() => {
+    if (initializeRef.current) return
+
+    isMountedRef.current = true
+    initializeRef.current = true
     const controller = new AbortController()
-    let isMounted = true
 
-    void (async () => {
+    const initAuth = async () => {
       try {
-        await checkAuth(controller.signal)
-      } catch (err) {
-        if (!isMounted) return
+        const result = await checkAuth(controller.signal)
 
-        const e = err as any
-        const msg = e && (e.message || e.name) ? String(e.message || e.name).toLowerCase() : ""
-        if (
-          msg.includes("abort") ||
-          msg.includes("signal is aborted") ||
-          e?.type === "aborted" ||
-          (err instanceof Error && err.name === "AbortError")
-        ) {
-          return
+        if (!isMountedRef.current) return
+
+        if (result.success && result.user) {
+          safeSetAuthState({
+            user: result.user,
+            loading: false,
+            error: null,
+          })
+        } else if (result.error) {
+          safeSetAuthState({
+            user: null,
+            loading: false,
+            error: result.error,
+          })
+        } else {
+          safeSetAuthState({
+            user: null,
+            loading: false,
+            error: null,
+          })
         }
-        console.error("Unhandled error in checkAuth:", err)
+      } catch (err) {
+        if (isMountedRef.current) {
+          console.error("Auth initialization error:", err)
+        }
       }
-    })()
+    }
+
+    initAuth()
 
     return () => {
-      isMounted = false
+      isMountedRef.current = false
       controller.abort()
     }
-  }, [checkAuth])
+  }, [])
 
   return {
     user: authState.user,
