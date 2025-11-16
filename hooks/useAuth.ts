@@ -252,37 +252,51 @@ export function useAuth() {
     isMountedRef.current = true
     const controller = new AbortController()
 
-    void (async () => {
-      const result = await checkAuth(controller.signal)
+    const initAuth = async () => {
+      try {
+        const result = await checkAuth(controller.signal)
 
-      if (!isMountedRef.current) return
+        if (!isMountedRef.current) return
 
-      if (result.success && result.user) {
-        setAuthState({
-          user: result.user,
-          loading: false,
-          error: null,
-        })
-      } else if (result.error) {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: result.error,
-        })
-      } else {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: null,
-        })
+        if (result.success && result.user) {
+          if (isMountedRef.current) {
+            setAuthState({
+              user: result.user,
+              loading: false,
+              error: null,
+            })
+          }
+        } else if (result.error) {
+          if (isMountedRef.current) {
+            setAuthState({
+              user: null,
+              loading: false,
+              error: result.error,
+            })
+          }
+        } else {
+          if (isMountedRef.current) {
+            setAuthState({
+              user: null,
+              loading: false,
+              error: null,
+            })
+          }
+        }
+      } catch (err) {
+        if (isMountedRef.current) {
+          console.error("Auth initialization error:", err)
+        }
       }
-    })()
+    }
+
+    initAuth()
 
     return () => {
       isMountedRef.current = false
       controller.abort()
     }
-  }, [checkAuth])
+  }, [])
 
   return {
     user: authState.user,
