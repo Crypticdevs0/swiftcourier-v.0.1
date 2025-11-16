@@ -268,11 +268,10 @@ export function useAuth() {
 
   useEffect(() => {
     const controller = new AbortController()
-    const isMountedRef = { current: true }
 
     void (async () => {
       try {
-        await checkAuth(controller.signal, isMountedRef)
+        await checkAuth(controller.signal)
       } catch (err) {
         if (!isMountedRef.current) return
 
