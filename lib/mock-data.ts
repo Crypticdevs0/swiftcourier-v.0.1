@@ -358,3 +358,14 @@ export function addTrackingEvent(trackingNumber: string, event: Package["events"
   }
   return false
 }
+
+export function createPackage(packageData: Omit<Package, "id" | "updatedAt">): Package {
+  const newPackage: Package = {
+    ...packageData,
+    id: `pkg_${Date.now()}`,
+    updatedAt: new Date().toISOString(),
+  }
+  mockPackages.push(newPackage)
+  saveData({ users: mockUsers, packages: mockPackages })
+  return newPackage
+}
