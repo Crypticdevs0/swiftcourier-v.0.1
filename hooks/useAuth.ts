@@ -176,8 +176,16 @@ export function useAuth() {
         let verified = false
         for (let i = 0; i < maxAttempts; i++) {
           await new Promise((r) => setTimeout(r, i === 0 ? 200 : 500))
-          verified = await checkAuth()
-          if (verified) break
+          const result = await checkAuth()
+          if (result.success) {
+            verified = true
+            safeSetAuthState({
+              user: result.user,
+              loading: false,
+              error: null,
+            })
+            break
+          }
         }
 
         if (verified) {
