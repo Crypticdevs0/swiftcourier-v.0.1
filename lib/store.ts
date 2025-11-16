@@ -11,6 +11,7 @@ export type Store = {
   updateUserLastLogin: (userId: string) => void
   getPackageByTrackingNumber: (trackingNumber: string) => Package | undefined
   addTrackingEvent: (trackingNumber: string, event: Package["events"][0]) => boolean
+  createPackage: (packageData: Omit<Package, "id" | "updatedAt">) => Package
   getAllPackages: () => Package[]
   seedInMemory: () => { seeded_in_memory: { users: number; packages: number; events: number }; sql_available: boolean }
   generateMockPackages?: (userType: "new" | "demo" | "existing", userId?: string) => Package[]
