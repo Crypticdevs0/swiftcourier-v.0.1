@@ -269,7 +269,19 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
   }
 
   if (!packageData) {
-    return null
+    return (
+      <div className="max-w-4xl mx-auto">
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-yellow-800 mb-2">No Information Available</h3>
+            <p className="text-yellow-600">
+              No tracking information could be found for the provided number.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
