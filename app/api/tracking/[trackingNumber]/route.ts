@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import store from "@/lib/store"
-import { deterministicRandom } from "@/lib/utils"
+import { deterministicRandom, parseAuthToken } from "@/lib/utils"
+import { verifyCSRFToken } from "@/lib/csrf"
 
 export async function GET(request: NextRequest, { params }: { params: { trackingNumber: string } }) {
   try {
