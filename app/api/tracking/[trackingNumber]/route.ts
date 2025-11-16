@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: { tracking
 
     return NextResponse.json({
       success: true,
-      package: packageData,
+      data: packageData,
       lastUpdated: new Date().toISOString(),
     })
   } catch (error) {
