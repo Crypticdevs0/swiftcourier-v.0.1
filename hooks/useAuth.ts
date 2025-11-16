@@ -32,6 +32,8 @@ export function useAuth() {
     error: null,
   })
 
+  const isMountedRef = useRef(true)
+
   const checkAuth = useCallback(async (signal?: AbortSignal, isMounted?: { current: boolean }): Promise<boolean> => {
     const updateState = (newState: AuthState) => {
       if (isMounted && !isMounted.current) return
