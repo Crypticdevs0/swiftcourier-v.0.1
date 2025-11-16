@@ -1,3 +1,6 @@
+import fs from "fs"
+import path from "path"
+
 export interface User {
   id: string
   email: string
@@ -50,7 +53,10 @@ export interface Package {
   }>
 }
 
-export const mockUsers: User[] = [
+const DATA_DIR = path.join(process.cwd(), ".data")
+const DATA_FILE = path.join(DATA_DIR, "store.json")
+
+const defaultUsers: User[] = [
   {
     id: "1",
     email: "demo@swiftcourier.com",
@@ -104,7 +110,7 @@ export const mockUsers: User[] = [
   },
 ]
 
-export const mockPackages: Package[] = [
+const defaultPackages: Package[] = [
   {
     id: "pkg_001",
     trackingNumber: "SC1234567890",
@@ -218,12 +224,52 @@ export const mockPackages: Package[] = [
   },
 ]
 
+interface StorageData {
+  users: User[]
+  packages: Package[]
+}
+
+function ensureDataDir(): void {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+  }
+}
+
+function loadData(): StorageData {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, "utf-8")
+      return JSON.parse(data)
+    }
+  } catch (error) {
+    console.warn("Failed to load data from file, using defaults:", error)
+  }
+  return {
+    users: defaultUsers,
+    packages: defaultPackages,
+  }
+}
+
+function saveData(data: StorageData): void {
+  try {
+    ensureDataDir()
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8")
+  } catch (error) {
+    console.error("Failed to save data to file:", error)
+  }
+}
+
+let data = loadData()
+
+export const mockUsers = data.users
+export const mockPackages = data.packages
+
 export function generateMockPackages(userType: "new" | "demo" | "existing", userId?: string): Package[] {
   switch (userType) {
     case "new":
-      return [] // New users have no packages
+      return []
     case "demo":
-      return mockPackages // Demo users see sample data
+      return mockPackages
     case "existing":
       return mockPackages.concat([
         {
@@ -286,6 +332,7 @@ export function createUser(userData: Omit<User, "id" | "createdAt">): User {
     },
   }
   mockUsers.push(newUser)
+  saveData({ users: mockUsers, packages: mockPackages })
   return newUser
 }
 
@@ -293,6 +340,7 @@ export function updateUserLastLogin(userId: string): void {
   const user = findUserById(userId)
   if (user) {
     user.lastLogin = new Date().toISOString()
+    saveData({ users: mockUsers, packages: mockPackages })
   }
 }
 
@@ -305,7 +353,19 @@ export function addTrackingEvent(trackingNumber: string, event: Package["events"
   if (pkg) {
     pkg.events.push(event)
     pkg.updatedAt = new Date().toISOString()
+    saveData({ users: mockUsers, packages: mockPackages })
     return true
   }
   return false
+}
+
+export function createPackage(packageData: Omit<Package, "id" | "updatedAt">): Package {
+  const newPackage: Package = {
+    ...packageData,
+    id: `pkg_${Date.now()}`,
+    updatedAt: new Date().toISOString(),
+  }
+  mockPackages.push(newPackage)
+  saveData({ users: mockUsers, packages: mockPackages })
+  return newPackage
 }
