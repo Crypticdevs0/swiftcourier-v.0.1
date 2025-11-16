@@ -7,6 +7,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { SmartChatManager } from "@/components/smart-chat-manager"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { AuthProvider } from "@/contexts/AuthContext"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -88,7 +89,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" className={inter.variable}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -99,22 +100,24 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} antialiased`}>
         <ErrorBoundary>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-            storageKey="swift-courier-theme"
-          >
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1" id="main-content" role="main">
-                {children}
-              </main>
-              <Footer />
-              <SmartChatManager />
-            </div>
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+              storageKey="swift-courier-theme"
+            >
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1" id="main-content" role="main">
+                  {children}
+                </main>
+                <Footer />
+                <SmartChatManager />
+              </div>
+            </ThemeProvider>
+          </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>
