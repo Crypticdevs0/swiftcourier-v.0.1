@@ -43,6 +43,9 @@ const inMemoryAdapter: Store = {
   addTrackingEvent(trackingNumber: string, event) {
     return mdAddTrackingEvent(trackingNumber, event)
   },
+  createPackage(packageData) {
+    return mdCreatePackage(packageData)
+  },
   getAllPackages() {
     return mockPackages
   },
