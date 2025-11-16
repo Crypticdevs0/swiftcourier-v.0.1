@@ -253,26 +253,24 @@ export function useAuth() {
     const controller = new AbortController()
 
     void (async () => {
-      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
-
       const result = await checkAuth(controller.signal)
 
       if (!isMountedRef.current) return
 
       if (result.success && result.user) {
-        safeSetAuthState({
+        setAuthState({
           user: result.user,
           loading: false,
           error: null,
         })
       } else if (result.error) {
-        safeSetAuthState({
+        setAuthState({
           user: null,
           loading: false,
           error: result.error,
         })
       } else {
-        safeSetAuthState({
+        setAuthState({
           user: null,
           loading: false,
           error: null,
@@ -284,7 +282,7 @@ export function useAuth() {
       isMountedRef.current = false
       controller.abort()
     }
-  }, [checkAuth, safeSetAuthState])
+  }, [checkAuth])
 
   return {
     user: authState.user,
