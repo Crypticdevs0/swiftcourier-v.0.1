@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
         zip: body.sender?.zip || "",
       },
       service: body.service || "Swift Standard",
-      weight: body.weight || 1,
-      dimensions: body.dimensions || { length: 10, width: 8, height: 4 },
+      weight: body.weight ? String(body.weight) : "1 lbs",
+      dimensions: body.dimensions ? JSON.stringify(body.dimensions) : "10x8x4 inches",
       events: [
         {
           timestamp: new Date().toISOString(),
