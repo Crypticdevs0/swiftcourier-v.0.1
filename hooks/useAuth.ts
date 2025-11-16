@@ -32,9 +32,19 @@ export function useAuth() {
     error: null,
   })
 
-  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
+  const checkAuth = useCallback(async (signal?: AbortSignal, isMounted?: { current: boolean }): Promise<boolean> => {
+    const updateState = (newState: AuthState) => {
+      if (isMounted && !isMounted.current) return
+      setAuthState(newState)
+    }
+
+    const updateStatePartial = (partial: Partial<AuthState>) => {
+      if (isMounted && !isMounted.current) return
+      setAuthState((prev) => ({ ...prev, ...partial }))
+    }
+
     // Ensure we indicate loading while we perform the auth check
-    setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+    updateStatePartial({ loading: true, error: null })
 
     try {
       const response = await fetch("/api/auth/me", {
@@ -49,14 +59,14 @@ export function useAuth() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.user) {
-          setAuthState({
+          updateState({
             user: data.user,
             loading: false,
             error: null,
           })
           return true
         } else {
-          setAuthState({
+          updateState({
             user: null,
             loading: false,
             error: null,
@@ -64,7 +74,7 @@ export function useAuth() {
           return false
         }
       } else {
-        setAuthState({
+        updateState({
           user: null,
           loading: false,
           error: null,
@@ -95,12 +105,12 @@ export function useAuth() {
 
       if (isAbortError) {
         // Ensure we clear the loading flag when the request is aborted
-        setAuthState((prev) => ({ ...prev, loading: false }))
+        updateStatePartial({ loading: false })
         return false
       }
 
       console.error("Auth check failed:", error)
-      setAuthState({
+      updateState({
         user: null,
         loading: false,
         error: error instanceof Error ? error.message : "Authentication failed",
