@@ -128,7 +128,7 @@ export function useAuth() {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      setAuthState((prev) => ({ ...prev, loading: true, error: null }))
+      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -159,11 +159,11 @@ export function useAuth() {
 
         const errorMessage =
           "Authentication verification failed: no auth token received. Please ensure cookies are enabled and try again."
-        setAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+        safeSetAuthState((prev) => ({ ...prev, loading: false, error: errorMessage }))
         return { success: false, error: errorMessage }
       } else {
         const errorMessage = data.error || "Login failed"
-        setAuthState((prev) => ({
+        safeSetAuthState((prev) => ({
           ...prev,
           loading: false,
           error: errorMessage,
@@ -172,14 +172,14 @@ export function useAuth() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Network error"
-      setAuthState((prev) => ({
+      safeSetAuthState((prev) => ({
         ...prev,
         loading: false,
         error: errorMessage,
       }))
       return { success: false, error: errorMessage }
     }
-  }, [checkAuth])
+  }, [checkAuth, safeSetAuthState])
 
   const register = useCallback(async (email: string, password: string, name: string) => {
     try {
