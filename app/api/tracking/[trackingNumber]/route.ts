@@ -72,10 +72,55 @@ export async function GET(request: NextRequest, { params }: { params: { tracking
 export async function POST(request: NextRequest, { params }: { params: { trackingNumber: string } }) {
   try {
     const { trackingNumber } = params
-    const body = await request.json()
 
     if (!trackingNumber) {
       return NextResponse.json({ success: false, error: "Tracking number is required" }, { status: 400 })
+    }
+
+    // Authentication check: only authenticated users can add tracking events
+    const authToken = request.cookies.get("auth-token")?.value
+    if (!authToken) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to add tracking events" },
+        { status: 401 },
+      )
+    }
+
+    // Verify auth token
+    const userId = parseAuthToken(authToken)
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Invalid authentication token" },
+        { status: 401 },
+      )
+    }
+
+    // Verify user exists and is admin/staff
+    const user = await store.findUserById(userId)
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 },
+      )
+    }
+
+    // Only allow admin/staff to add tracking events
+    if (user.role !== "admin" && user.role !== "staff") {
+      return NextResponse.json(
+        { success: false, error: "Only administrators can add tracking events" },
+        { status: 403 },
+      )
+    }
+
+    // CSRF token validation
+    const body = await request.json()
+    const csrfToken = body.csrfToken || request.headers.get("x-csrf-token")
+
+    if (!csrfToken || !verifyCSRFToken(csrfToken)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid or missing CSRF token" },
+        { status: 403 },
+      )
     }
 
     const { event } = body
