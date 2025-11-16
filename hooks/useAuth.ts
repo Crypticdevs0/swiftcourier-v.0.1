@@ -263,8 +263,8 @@ export function useAuth() {
   }, [safeSetAuthState])
 
   const clearError = useCallback(() => {
-    setAuthState((prev) => ({ ...prev, error: null }))
-  }, [])
+    safeSetAuthState((prev) => ({ ...prev, error: null }))
+  }, [safeSetAuthState])
 
   useEffect(() => {
     const controller = new AbortController()
