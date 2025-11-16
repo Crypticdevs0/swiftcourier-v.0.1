@@ -238,26 +238,30 @@ export function useAuth() {
     const controller = new AbortController()
 
     void (async () => {
+      safeSetAuthState((prev) => ({ ...prev, loading: true, error: null }))
+
+      const result = await checkAuth(controller.signal)
+
       if (!isMountedRef.current) return
 
-      try {
-        await checkAuth(controller.signal)
-      } catch (err) {
-        if (!isMountedRef.current) return
-
-        const e = err as any
-        const msg = e && (e.message || e.name) ? String(e.message || e.name).toLowerCase() : ""
-        if (
-          msg.includes("abort") ||
-          msg.includes("signal is aborted") ||
-          e?.type === "aborted" ||
-          (err instanceof Error && err.name === "AbortError")
-        ) {
-          return
-        }
-        if (isMountedRef.current) {
-          console.error("Unhandled error in checkAuth:", err)
-        }
+      if (result.success && result.user) {
+        safeSetAuthState({
+          user: result.user,
+          loading: false,
+          error: null,
+        })
+      } else if (result.error) {
+        safeSetAuthState({
+          user: null,
+          loading: false,
+          error: result.error,
+        })
+      } else {
+        safeSetAuthState({
+          user: null,
+          loading: false,
+          error: null,
+        })
       }
     })()
 
@@ -265,7 +269,7 @@ export function useAuth() {
       isMountedRef.current = false
       controller.abort()
     }
-  }, [checkAuth])
+  }, [checkAuth, safeSetAuthState])
 
   return {
     user: authState.user,
