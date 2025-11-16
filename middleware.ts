@@ -2,6 +2,18 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
+  // HTTPS enforcement: redirect HTTP to HTTPS in production
+  if (process.env.NODE_ENV === "production") {
+    const proto = request.headers.get("x-forwarded-proto")
+    const host = request.headers.get("host")
+
+    if (proto === "http" && host) {
+      const httpsUrl = new URL(request.url)
+      httpsUrl.protocol = "https:"
+      return NextResponse.redirect(httpsUrl, { status: 308 })
+    }
+  }
+
   // Create response
   const response = NextResponse.next()
 
