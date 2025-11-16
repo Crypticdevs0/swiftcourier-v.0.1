@@ -34,14 +34,19 @@ export function useAuth() {
 
   const isMountedRef = useRef(true)
 
-  const checkAuth = useCallback(async (signal?: AbortSignal, isMounted?: { current: boolean }): Promise<boolean> => {
+  const safeSetAuthState = useCallback((newState: AuthState | ((prev: AuthState) => AuthState)) => {
+    if (!isMountedRef.current) return
+    setAuthState(newState)
+  }, [])
+
+  const checkAuth = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
     const updateState = (newState: AuthState) => {
-      if (isMounted && !isMounted.current) return
+      if (!isMountedRef.current) return
       setAuthState(newState)
     }
 
     const updateStatePartial = (partial: Partial<AuthState>) => {
-      if (isMounted && !isMounted.current) return
+      if (!isMountedRef.current) return
       setAuthState((prev) => ({ ...prev, ...partial }))
     }
 
