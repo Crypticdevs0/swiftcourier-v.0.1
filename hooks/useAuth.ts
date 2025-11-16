@@ -267,9 +267,12 @@ export function useAuth() {
   }, [safeSetAuthState])
 
   useEffect(() => {
+    isMountedRef.current = true
     const controller = new AbortController()
 
     void (async () => {
+      if (!isMountedRef.current) return
+
       try {
         await checkAuth(controller.signal)
       } catch (err) {
@@ -285,7 +288,9 @@ export function useAuth() {
         ) {
           return
         }
-        console.error("Unhandled error in checkAuth:", err)
+        if (isMountedRef.current) {
+          console.error("Unhandled error in checkAuth:", err)
+        }
       }
     })()
 
