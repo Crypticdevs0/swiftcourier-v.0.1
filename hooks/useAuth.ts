@@ -263,19 +263,19 @@ export function useAuth() {
         if (!isMountedRef.current) return
 
         if (result.success && result.user) {
-          setAuthState({
+          safeSetAuthState({
             user: result.user,
             loading: false,
             error: null,
           })
         } else if (result.error) {
-          setAuthState({
+          safeSetAuthState({
             user: null,
             loading: false,
             error: result.error,
           })
         } else {
-          setAuthState({
+          safeSetAuthState({
             user: null,
             loading: false,
             error: null,
