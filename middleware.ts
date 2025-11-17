@@ -23,10 +23,12 @@ export function middleware(request: NextRequest) {
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("Referrer-Policy", "origin-when-cross-origin")
-  response.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss:; frame-src 'none';",
-  )
+  // More permissive CSP for development - allows inline scripts and eval
+  const csp = process.env.NODE_ENV === "production" 
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data: https:; connect-src 'self' wss: https:; frame-src 'none';"
+    : "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data: https:; connect-src 'self' wss: https: ws:; frame-src 'self';"
+  
+  response.headers.set("Content-Security-Policy", csp)
   // Additional security headers for production
   // HSTS (only enable in production to avoid local dev issues)
   try {
