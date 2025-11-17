@@ -370,18 +370,25 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
 
       {/* Main Status Card */}
       <Card className="border-0 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden animate-in slide-in-from-bottom duration-300">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center space-x-2">
-                {getStatusIcon(packageData.status)}
-                <span>Package Status</span>
+              <CardTitle className="flex items-center space-x-2 text-xl">
+                <div className="animate-bounce">
+                  {getStatusIcon(packageData.status)}
+                </div>
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Package Status
+                </span>
               </CardTitle>
-              <CardDescription>Tracking Number: {packageData.trackingNumber}</CardDescription>
+              <CardDescription className="mt-2 flex items-center space-x-1">
+                <span className="text-gray-600">Tracking:</span>
+                <span className="font-mono font-bold text-blue-600">{packageData.trackingNumber}</span>
+              </CardDescription>
             </div>
             <Badge
               variant={packageData.status === "delivered" ? "default" : "secondary"}
-              className={`${getStatusColor(packageData.status)} text-white px-3 py-1`}
+              className={`${getStatusColor(packageData.status)} text-white px-4 py-2 text-sm font-bold animate-in fade-in duration-300 shadow-lg`}
             >
               {packageData.status.replace("_", " ").toUpperCase()}
             </Badge>
