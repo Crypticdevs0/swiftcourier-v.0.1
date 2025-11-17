@@ -516,15 +516,17 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
       </Card>
 
       {/* Tracking History */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="h-5 w-5" />
-            <span>Tracking History</span>
+      <Card className="border-0 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden animate-in slide-in-from-bottom duration-300" style={{ animationDelay: "100ms" }}>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+          <CardTitle className="flex items-center space-x-2 text-xl">
+            <Clock className="h-5 w-5 text-blue-600" />
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Tracking History
+            </span>
           </CardTitle>
-          <CardDescription>Complete journey of your package</CardDescription>
+          <CardDescription className="text-gray-600">Complete journey of your package</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-6">
           <div className="space-y-4">
             {packageData.events.map((event, index) => (
               <div key={event.id} className="flex items-start space-x-4">
