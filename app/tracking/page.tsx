@@ -109,26 +109,39 @@ function TrackingContent() {
 
                 <Button
                   onClick={() => handleTrack()}
-                  className="w-full relative overflow-hidden group"
+                  className={cn(
+                    "w-full relative overflow-hidden group transition-all duration-300",
+                    isButtonLoading ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 shadow-lg shadow-blue-600/50" : "bg-blue-600 hover:bg-blue-700"
+                  )}
                   size="lg"
                   disabled={isButtonLoading}
                 >
                   {isButtonLoading ? (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-pulse"></div>
+                    <div className="relative flex items-center justify-center space-x-2 py-2">
+                      {/* Outer spinner */}
+                      <div className="absolute inset-0 rounded-md bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 opacity-0 animate-pulse"></div>
+
+                      {/* Content */}
                       <div className="relative flex items-center justify-center space-x-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Tracking...</span>
+                        {/* Double spinner animation */}
+                        <div className="relative w-5 h-5">
+                          <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <div
+                            className="absolute inset-0.5 border-2 border-white border-b-transparent rounded-full animate-spin"
+                            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+                          ></div>
+                        </div>
+                        <span className="font-medium">Tracking...</span>
                       </div>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative flex items-center justify-center space-x-2">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-md"></div>
                       <div className="relative flex items-center justify-center space-x-2">
-                        <Zap className="h-4 w-4 group-hover:animate-pulse" />
+                        <Zap className="h-4 w-4 transition-transform group-hover:scale-110 group-hover:animate-pulse" />
                         <span>Track Package</span>
                       </div>
-                    </>
+                    </div>
                   )}
                 </Button>
 
