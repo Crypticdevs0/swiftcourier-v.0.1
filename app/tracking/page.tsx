@@ -1,20 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { USPSStyleTracker } from "@/components/usps-style-tracker"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { Search, Package, ArrowLeft, Zap } from "lucide-react"
 
-export default function TrackPage() {
+// Separate component to handle search params
+function TrackingContent() {
   const searchParams = useSearchParams()
   const [trackingNumber, setTrackingNumber] = useState("")
   const [isTracking, setIsTracking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isButtonLoading, setIsButtonLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
 
-  // Fix hydration issues
   useEffect(() => {
-    setMounted(true)
     const numberFromUrl = searchParams.get("number")
     if (numberFromUrl) {
       setTrackingNumber(numberFromUrl)
@@ -23,28 +26,23 @@ export default function TrackPage() {
   }, [searchParams])
 
   const handleTrack = (number?: string) => {
-    setDebugInfo("handleTrack called")
     const trackingNum = number || trackingNumber
     if (!trackingNum.trim()) {
       setError("Please enter a tracking number")
-      setDebugInfo("Error: No tracking number")
       return
     }
 
     // Basic validation for Swift Courier tracking numbers
     if (!trackingNum.toUpperCase().startsWith("SC") || trackingNum.length !== 12) {
       setError("Please enter a valid 12-character Swift Courier tracking number (e.g., SC1234567890)")
-      setDebugInfo("Error: Invalid tracking number format")
       return
     }
 
     setError(null)
-    setDebugInfo("Setting loading state...")
     setIsButtonLoading(true)
     
     // Add a 4-second delay with modern animation
     setTimeout(() => {
-      setDebugInfo("Timeout completed")
       setIsButtonLoading(false)
       setIsTracking(true)
     }, 4000)
@@ -60,25 +58,6 @@ export default function TrackPage() {
     setIsTracking(false)
     setTrackingNumber("")
     setError(null)
-  }
-
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6">
-                <Package className="h-8 w-8 text-blue-600" />
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">Track Your Package</h1>
-              <p className="text-lg text-gray-600">Loading...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -200,3 +179,29 @@ export default function TrackPage() {
     </div>
   )
 }
+
+// Main component with Suspense wrapper
+export default function TrackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6">
+                <Package className="h-8 w-8 text-blue-600" />
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">Track Your Package</h1>
+              <p className="text-lg text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <TrackingContent />
+    </Suspense>
+  )
+}
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic'
