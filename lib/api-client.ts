@@ -79,6 +79,7 @@ export async function apiCall<T = any>(
 
 /**
  * Make a public (unauthenticated) API call
+ * Includes credentials to ensure cookies are sent with requests
  */
 export async function publicApiCall<T = any>(
   url: string,
@@ -88,6 +89,7 @@ export async function publicApiCall<T = any>(
 
   const fetchOptions: RequestInit = {
     method,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...headers,
