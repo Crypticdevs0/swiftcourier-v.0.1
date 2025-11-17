@@ -272,23 +272,23 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
               </div>
 
               {/* Status indicators */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className={`p-3 rounded-lg transition-all duration-500 ${loadingProgress >= 20 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'} border`}>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${loadingProgress >= 20 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                    <span className="text-sm font-medium">Connecting</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className={`p-4 rounded-xl transition-all duration-500 border-2 ${loadingProgress >= 20 ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 shadow-md' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-4 h-4 rounded-full transition-all ${loadingProgress >= 20 ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-gray-300'}`}></div>
+                    <span className={`text-sm font-semibold ${loadingProgress >= 20 ? 'text-green-700' : 'text-gray-600'}`}>Connecting</span>
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg transition-all duration-500 ${loadingProgress >= 60 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'} border`}>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${loadingProgress >= 60 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                    <span className="text-sm font-medium">Searching</span>
+                <div className={`p-4 rounded-xl transition-all duration-500 border-2 ${loadingProgress >= 60 ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 shadow-md' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-4 h-4 rounded-full transition-all ${loadingProgress >= 60 ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-gray-300'}`}></div>
+                    <span className={`text-sm font-semibold ${loadingProgress >= 60 ? 'text-green-700' : 'text-gray-600'}`}>Searching</span>
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg transition-all duration-500 ${loadingProgress >= 95 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'} border`}>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${loadingProgress >= 95 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                    <span className="text-sm font-medium">Loading</span>
+                <div className={`p-4 rounded-xl transition-all duration-500 border-2 ${loadingProgress >= 95 ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 shadow-md' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-4 h-4 rounded-full transition-all ${loadingProgress >= 95 ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-gray-300'}`}></div>
+                    <span className={`text-sm font-semibold ${loadingProgress >= 95 ? 'text-green-700' : 'text-gray-600'}`}>Loading</span>
                   </div>
                 </div>
               </div>
