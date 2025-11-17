@@ -213,23 +213,24 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50">
-          <CardHeader className="text-center pb-4">
+      <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-blue-50 to-indigo-50 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 pointer-events-none"></div>
+          <CardHeader className="text-center pb-4 relative z-10">
             <CardTitle className="flex items-center justify-center space-x-3">
               <div className="relative">
                 <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 <div className="absolute inset-0 w-8 h-8 border-3 border-blue-300 border-b-transparent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }}></div>
               </div>
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold text-xl">
                 Processing Tracking Request
               </span>
             </CardTitle>
-            <CardDescription className="text-gray-600">
-              Retrieving real-time information for <span className="font-mono font-semibold text-blue-600">{trackingNumber}</span>
+            <CardDescription className="text-gray-600 mt-2">
+              Retrieving real-time information for <span className="font-mono font-bold text-blue-600 text-base">{trackingNumber}</span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-8">
+          <CardContent className="space-y-8 relative z-10">
             <div className="text-center">
               {/* Modern animated tracking icon */}
               <div className="relative mx-auto mb-8 w-24 h-24">
