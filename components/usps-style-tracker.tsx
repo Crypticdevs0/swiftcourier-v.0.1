@@ -566,28 +566,47 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
       </Card>
 
       {/* Additional Actions */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden animate-in slide-in-from-bottom duration-300" style={{ animationDelay: "200ms" }}>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+          <CardTitle className="text-lg">Quick Actions</CardTitle>
+        </CardHeader>
         <CardContent className="p-6">
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="flex-1 sm:flex-none">
-              <Mail className="h-4 w-4 mr-2" />
-              Email Updates
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Button
+              variant="outline"
+              className="flex flex-col items-center space-y-1 h-auto py-4 hover:bg-blue-50 hover:border-blue-300 transition-all group"
+            >
+              <Mail className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold text-center">Email Updates</span>
             </Button>
-            <Button variant="outline" className="flex-1 sm:flex-none">
-              <Phone className="h-4 w-4 mr-2" />
-              SMS Alerts
+            <Button
+              variant="outline"
+              className="flex flex-col items-center space-y-1 h-auto py-4 hover:bg-blue-50 hover:border-blue-300 transition-all group"
+            >
+              <Phone className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold text-center">SMS Alerts</span>
             </Button>
-            <Button variant="outline" className="flex-1 sm:flex-none">
-              <Calendar className="h-4 w-4 mr-2" />
-              Schedule Delivery
+            <Button
+              variant="outline"
+              className="flex flex-col items-center space-y-1 h-auto py-4 hover:bg-blue-50 hover:border-blue-300 transition-all group"
+            >
+              <Calendar className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold text-center">Schedule</span>
             </Button>
-            <Button variant="outline" className="flex-1 sm:flex-none">
-              <Building className="h-4 w-4 mr-2" />
-              Hold at Location
+            <Button
+              variant="outline"
+              className="flex flex-col items-center space-y-1 h-auto py-4 hover:bg-blue-50 hover:border-blue-300 transition-all group"
+            >
+              <Building className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold text-center">Hold</span>
             </Button>
-            <Button variant="outline" className="flex-1 sm:flex-none" onClick={fetchTrackingData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+            <Button
+              variant="outline"
+              onClick={fetchTrackingData}
+              className="flex flex-col items-center space-y-1 h-auto py-4 hover:bg-blue-50 hover:border-blue-300 transition-all group"
+            >
+              <RefreshCw className="h-5 w-5 text-blue-600 group-hover:rotate-180 group-hover:animate-spin transition-transform" />
+              <span className="text-xs font-semibold text-center">Refresh</span>
             </Button>
           </div>
         </CardContent>
