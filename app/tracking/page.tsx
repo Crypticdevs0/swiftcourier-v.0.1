@@ -105,18 +105,11 @@ function TrackingContent() {
                     aria-describedby={error ? "tracking-error" : undefined}
                   />
                   <p className="text-xs text-gray-500 text-center">Swift Courier tracking numbers start with "SC"</p>
-                  {debugInfo && <p className="text-xs text-red-500 text-center">Debug: {debugInfo}</p>}
                 </div>
 
-                <Button 
-                  onClick={(e) => {
-                    e.preventDefault()
-                    console.log("Button clicked!")
-                    setTestCounter(prev => prev + 1)
-                    setDebugInfo(`Button clicked ${testCounter + 1} times`)
-                    handleTrack()
-                  }} 
-                  className="w-full relative overflow-hidden group" 
+                <Button
+                  onClick={() => handleTrack()}
+                  className="w-full relative overflow-hidden group"
                   size="lg"
                   disabled={isButtonLoading}
                 >
