@@ -2,9 +2,27 @@ import { type NextRequest, NextResponse } from "next/server"
 import * as jwt from "jsonwebtoken"
 import store from "@/lib/store"
 import { sanitizeLoginInput } from "@/lib/sanitize"
+import { checkRateLimit, getRemainingRequests, getResetTime } from "@/lib/rate-limiter"
+import { getClientIp, createRateLimitedResponse } from "@/lib/utils"
+
+// Rate limit: 5 login attempts per 15 minutes per IP
+const LOGIN_RATE_LIMIT = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 5,
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIp(request)
+    const rateLimitKey = `login:${clientIp}`
+
+    // Check rate limit
+    if (!checkRateLimit(rateLimitKey, LOGIN_RATE_LIMIT)) {
+      const resetTime = getResetTime(rateLimitKey)
+      const retryAfter = resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : undefined
+      return createRateLimitedResponse(retryAfter)
+    }
+
     const body = await request.json()
 
     // Sanitize input
