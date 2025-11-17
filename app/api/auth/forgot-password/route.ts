@@ -59,10 +59,8 @@ export async function POST(request: NextRequest) {
       userId: user.id,
     })
 
-    // In production, send email with reset link
-    // For demo, log the reset token
-    const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth?tab=reset&token=${resetToken}`
-    console.log(`Password reset link for ${email}: ${resetLink}`)
+    // In production, send email with reset link containing the token
+    // TODO: Implement email sending with reset link
 
     return NextResponse.json(
       {
