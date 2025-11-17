@@ -62,15 +62,19 @@ function TrackingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 animate-fade-in">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-12 animate-in slide-in-from-top duration-500">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <Package className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Track Your Package</h1>
+            <div className="relative">
+              <Package className="h-8 w-8 text-blue-600 animate-bounce" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Track Your Package
+            </h1>
           </div>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
             Enter your Swift Courier tracking number to get real-time updates on your shipment's journey
           </p>
         </div>
