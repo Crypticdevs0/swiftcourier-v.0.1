@@ -98,20 +98,21 @@ function TrackingContent() {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <label htmlFor="tracking-input" className="text-sm font-medium text-gray-700">
-                    Tracking Number
+                <div className="space-y-3">
+                  <label htmlFor="tracking-input" className="text-sm font-semibold text-gray-700 flex items-center space-x-1">
+                    <Zap className="h-3 w-3 text-blue-600" />
+                    <span>Tracking Number</span>
                   </label>
                   <Input
                     id="tracking-input"
-                    placeholder="Enter tracking number (e.g., SC1234567890)"
+                    placeholder="e.g., SC1234567890"
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value.toUpperCase())}
                     onKeyPress={(e) => e.key === "Enter" && handleTrack()}
-                    className="text-center font-mono"
+                    className="text-center font-mono text-lg h-12 border-2 border-blue-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     aria-describedby={error ? "tracking-error" : undefined}
                   />
-                  <p className="text-xs text-gray-500 text-center">Swift Courier tracking numbers start with "SC"</p>
+                  <p className="text-xs text-gray-500 text-center font-medium">Starts with "SC" followed by 10 digits</p>
                 </div>
 
                 <Button
