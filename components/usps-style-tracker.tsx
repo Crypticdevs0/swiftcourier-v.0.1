@@ -351,21 +351,25 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Real-time Updates Indicator */}
       {realTimeUpdates && (packageData.status === "in_transit" || packageData.status === "out_for_delivery") && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md animate-in slide-in-from-top duration-300">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <p className="text-sm text-green-800 font-medium">Real-time tracking active - Updates every 30 seconds</p>
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: "0.1s" }}></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+              </div>
+              <p className="text-sm text-green-800 font-semibold">Real-time tracking active • Updates every 30 seconds</p>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Main Status Card */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden animate-in slide-in-from-bottom duration-300">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
