@@ -1,376 +1,195 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Lock, User, Mail, Eye, EyeOff, Shield, Zap, AlertCircle, Truck } from "lucide-react"
+import { Lock, Mail, Eye, EyeOff, Truck, AlertCircle } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { toast } from "sonner"
 
 export default function AdminLogin() {
-  const [loginData, setLoginData] = useState({ username: "", password: "" })
-  const [registerData, setRegisterData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "admin",
-  })
-  const [activeTab, setActiveTab] = useState("login")
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
+  const { user, loading, login } = useAuth()
 
-  // Check if already authenticated
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Redirect if already authenticated
   useEffect(() => {
-    const authStatus = localStorage.getItem("admin_authenticated")
-    const userRole = localStorage.getItem("admin_role")
-    if (authStatus === "true" && userRole) {
-      router.push("/admin")
-    }
-  }, [router])
-
-  const validateLogin = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!loginData.username.trim()) {
-      newErrors.username = "Username is required"
-    }
-
-    if (!loginData.password.trim()) {
-      newErrors.password = "Password is required"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const validateRegister = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!registerData.username.trim()) {
-      newErrors.username = "Username is required"
-    } else if (registerData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters"
-    }
-
-    if (!registerData.email.trim()) {
-      newErrors.email = "Email is required"
-    } else if (!/\S+@\S+\.\S+/.test(registerData.email)) {
-      newErrors.email = "Email is invalid"
-    }
-
-    if (!registerData.password.trim()) {
-      newErrors.password = "Password is required"
-    } else if (registerData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
-    }
-
-    if (registerData.password !== registerData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateLogin()) return
-
-    setIsLoading(true)
-    setErrors({})
-
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Demo credentials
-      const validCredentials = [
-        { username: "admin", password: "admin123", role: "super_admin", name: "Super Admin" },
-        { username: "manager", password: "manager123", role: "manager", name: "Operations Manager" },
-        { username: "support", password: "support123", role: "support", name: "Support Agent" },
-      ]
-
-      const user = validCredentials.find(
-        (cred) => cred.username === loginData.username && cred.password === loginData.password,
-      )
-
-      if (user) {
-        localStorage.setItem("admin_authenticated", "true")
-        localStorage.setItem("admin_role", user.role)
-        localStorage.setItem("admin_name", user.name)
-        localStorage.setItem("admin_username", user.username)
+    if (!loading && user) {
+      if (user.role === "admin") {
         router.push("/admin")
       } else {
-        setErrors({ form: "Invalid credentials. Please try again." })
+        router.push("/dashboard")
       }
-    } catch (err) {
-      setErrors({ form: "Authentication failed. Please try again." })
+    }
+  }, [user, loading, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrors({})
+    setIsLoading(true)
+
+    try {
+      // Validate inputs
+      const newErrors: Record<string, string> = {}
+
+      if (!email.trim()) {
+        newErrors.email = "Email is required"
+      } else if (!email.includes("@")) {
+        newErrors.email = "Invalid email format"
+      }
+
+      if (!password.trim()) {
+        newErrors.password = "Password is required"
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
+        setIsLoading(false)
+        return
+      }
+
+      // Attempt login
+      const result = await login(email, password)
+
+      if (result.success) {
+        toast.success("Login successful!")
+        // The useAuth hook will update and useEffect will redirect
+      } else {
+        // Check if user is admin
+        if (result.error?.includes("not found") || result.error?.includes("password")) {
+          setErrors({ general: "Invalid email or password" })
+          toast.error("Invalid credentials")
+        } else {
+          setErrors({ general: result.error || "Login failed" })
+          toast.error(result.error || "Login failed")
+        }
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "An unexpected error occurred"
+      setErrors({ general: errorMsg })
+      toast.error(errorMsg)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateRegister()) return
-
-    setIsLoading(true)
-    setErrors({})
-
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // In a real app, this would create a new admin user
-      localStorage.setItem("admin_authenticated", "true")
-      localStorage.setItem("admin_role", registerData.role)
-      localStorage.setItem("admin_name", registerData.username)
-      localStorage.setItem("admin_username", registerData.username)
-      router.push("/admin")
-    } catch (err) {
-      setErrors({ form: "Registration failed. Please try again." })
-    } finally {
-      setIsLoading(false)
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[url('/placeholder.svg?height=1080&width=1920')] bg-cover bg-center opacity-5" />
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-red-600/10" />
-
-      {/* Login Card */}
-      <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="text-center space-y-4 pb-6">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg">
-            <Truck className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-slate-200">
+        <CardHeader className="space-y-2">
+          <div className="flex items-center justify-center mb-4">
+            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
+              <Truck className="h-7 w-7 text-white" />
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              Swift Courier Admin
-            </CardTitle>
-            <CardDescription className="text-slate-600">Secure access to administrative dashboard</CardDescription>
-          </div>
+          <CardTitle className="text-2xl font-bold text-center">Admin Portal</CardTitle>
+          <CardDescription className="text-center">
+            Swift Courier Operations Dashboard
+          </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Login
-              </TabsTrigger>
-              <TabsTrigger value="register" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Register
-              </TabsTrigger>
-            </TabsList>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {errors.general && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{errors.general}</p>
+              </div>
+            )}
 
-            <TabsContent value="login" className="space-y-4 mt-6">
-              <form onSubmit={handleLogin} className="space-y-4">
-                {errors.form && (
-                  <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    {errors.form}
-                  </div>
-                )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="email"
+                  placeholder="admin@swiftcourier.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (errors.email) {
+                      setErrors((prev) => ({ ...prev, email: "" }))
+                    }
+                  }}
+                  className={`pl-10 ${errors.email ? "border-red-500 focus:ring-red-500" : ""}`}
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.email && (
+                <p className="text-xs text-red-600">{errors.email}</p>
+              )}
+            </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="username" className="block text-sm font-medium text-slate-700">
-                    Username
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="username"
-                      type="text"
-                      value={loginData.username}
-                      onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                      className={`pl-10 ${errors.username ? "border-red-300 focus:border-red-500" : ""}`}
-                      placeholder="Enter your username"
-                      required
-                    />
-                  </div>
-                  {errors.username && <p className="text-sm text-red-600">{errors.username}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      className={`pl-10 pr-10 ${errors.password ? "border-red-300 focus:border-red-500" : ""}`}
-                      placeholder="Enter your password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (errors.password) {
+                      setErrors((prev) => ({ ...prev, password: "" }))
+                    }
+                  }}
+                  className={`pl-10 pr-10 ${errors.password ? "border-red-500 focus:ring-red-500" : ""}`}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Signing In...
-                    </>
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <>
-                      <Lock className="mr-2 h-4 w-4" />
-                      Sign In
-                    </>
+                    <Eye className="h-4 w-4" />
                   )}
-                </Button>
-              </form>
-            </TabsContent>
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-red-600">{errors.password}</p>
+              )}
+            </div>
 
-            <TabsContent value="register" className="space-y-4 mt-6">
-              <form onSubmit={handleRegister} className="space-y-4">
-                {errors.form && (
-                  <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    {errors.form}
-                  </div>
-                )}
+            <Button
+              type="submit"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="reg-username" className="block text-sm font-medium text-slate-700">
-                      Username
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="reg-username"
-                        type="text"
-                        value={registerData.username}
-                        onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-                        className={`pl-10 ${errors.username ? "border-red-300 focus:border-red-500" : ""}`}
-                        placeholder="Username"
-                        required
-                      />
-                    </div>
-                    {errors.username && <p className="text-xs text-red-600">{errors.username}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="reg-email" className="block text-sm font-medium text-slate-700">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="reg-email"
-                        type="email"
-                        value={registerData.email}
-                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                        className={`pl-10 ${errors.email ? "border-red-300 focus:border-red-500" : ""}`}
-                        placeholder="Email"
-                        required
-                      />
-                    </div>
-                    {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="reg-password" className="block text-sm font-medium text-slate-700">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="reg-password"
-                      type={showPassword ? "text" : "password"}
-                      value={registerData.password}
-                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                      className={`pl-10 pr-10 ${errors.password ? "border-red-300 focus:border-red-500" : ""}`}
-                      placeholder="Enter password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="reg-confirm-password" className="block text-sm font-medium text-slate-700">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="reg-confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={registerData.confirmPassword}
-                      onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                      className={`pl-10 pr-10 ${errors.confirmPassword ? "border-red-300 focus:border-red-500" : ""}`}
-                      placeholder="Confirm password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && <p className="text-sm text-red-600">{errors.confirmPassword}</p>}
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="mr-2 h-4 w-4" />
-                      Create Account
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900 font-medium mb-2">Demo Credentials:</p>
+            <div className="space-y-1 text-xs text-blue-800 font-mono">
+              <p>Email: <span className="text-blue-700">admin@swiftcourier.com</span></p>
+              <p>Password: <span className="text-blue-700">admin123</span></p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
