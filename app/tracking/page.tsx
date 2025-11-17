@@ -157,10 +157,14 @@ function TrackingContent() {
             </Card>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom duration-500">
             {/* Back button */}
             <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={resetTracking} className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={resetTracking}
+                className="flex items-center space-x-2 hover:bg-blue-50 hover:border-blue-300 transition-all"
+              >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Track Another Package</span>
               </Button>
@@ -169,15 +173,23 @@ function TrackingContent() {
             {/* Tracking Results */}
             <ErrorBoundary
               fallback={({ error, retry }) => (
-                <Card className="border-red-200 bg-red-50">
+                <Card className="border-red-200 bg-red-50 shadow-lg animate-in fade-in duration-300">
                   <CardContent className="p-6 text-center">
-                    <h3 className="text-lg font-medium text-red-600 mb-2">Tracking Error</h3>
-                    <p className="text-gray-600 mb-4">{error.message}</p>
-                    <div className="space-y-2">
-                      <Button onClick={retry} className="w-full">
+                    <div className="text-5xl mb-4">⚠️</div>
+                    <h3 className="text-lg font-semibold text-red-600 mb-2">Tracking Error</h3>
+                    <p className="text-gray-600 mb-6">{error.message}</p>
+                    <div className="space-y-3">
+                      <Button
+                        onClick={retry}
+                        className="w-full bg-red-600 hover:bg-red-700"
+                      >
                         Try Again
                       </Button>
-                      <Button variant="outline" onClick={resetTracking} className="w-full">
+                      <Button
+                        variant="outline"
+                        onClick={resetTracking}
+                        className="w-full"
+                      >
                         Enter New Tracking Number
                       </Button>
                     </div>
