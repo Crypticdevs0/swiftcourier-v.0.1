@@ -396,22 +396,24 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Current Status */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl">
-            <div className="flex items-start justify-between">
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 p-8 rounded-2xl border border-blue-100 shadow-sm animate-in slide-in-from-left duration-300">
+            <div className="flex items-start justify-between gap-6">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {packageData.status === "delivered"
-                    ? "Delivered Successfully"
-                    : packageData.status === "out_for_delivery"
-                      ? "Out for Delivery"
-                      : "In Transit"}
+                <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                  <span>
+                    {packageData.status === "delivered"
+                      ? "✓ Delivered Successfully"
+                      : packageData.status === "out_for_delivery"
+                        ? "🚚 Out for Delivery"
+                        : "📦 In Transit"}
+                  </span>
                 </h3>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>{packageData.currentLocation}</span>
+                <div className="flex items-center text-gray-700 mb-3 text-lg">
+                  <MapPin className="h-5 w-5 mr-3 text-blue-600" />
+                  <span className="font-semibold">{packageData.currentLocation}</span>
                 </div>
-                <div className="flex items-center text-gray-600">
-                  <Clock className="h-4 w-4 mr-2" />
+                <div className="flex items-center text-gray-700 font-medium">
+                  <Clock className="h-5 w-5 mr-3 text-blue-600" />
                   <span>
                     {packageData.status === "delivered"
                       ? `Delivered on ${formatDate(packageData.deliveredAt || packageData.estimatedDelivery)}`
@@ -420,12 +422,20 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">{packageData.progress}%</div>
-                <div className="text-sm text-gray-500">Complete</div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  {packageData.progress}%
+                </div>
+                <div className="text-sm text-gray-600 font-medium mt-1">Complete</div>
               </div>
             </div>
-            <div className="mt-4">
-              <Progress value={packageData.progress} className="h-3" />
+            <div className="mt-6 space-y-2">
+              <Progress value={packageData.progress} className="h-4 bg-gray-200 rounded-full" />
+              <div className="flex justify-between text-xs text-gray-600">
+                <span>Origin</span>
+                <span>In Transit</span>
+                <span>Destination</span>
+                <span>Delivered</span>
+              </div>
             </div>
           </div>
 
