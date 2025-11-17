@@ -484,10 +484,10 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
             </Card>
 
             {/* Delivery Information */}
-            <Card className="border border-gray-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
+            <Card className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardHeader className="pb-3 bg-gradient-to-br from-indigo-50 to-transparent border-b border-indigo-100">
+                <CardTitle className="text-base flex items-center font-bold">
+                  <MapPin className="h-5 w-5 mr-2 text-indigo-600" />
                   Delivery Information
                 </CardTitle>
               </CardHeader>
