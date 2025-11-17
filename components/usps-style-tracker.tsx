@@ -293,12 +293,13 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
                 </div>
               </div>
 
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="flex items-center justify-center space-x-2 text-blue-700">
-                  <Zap className="h-4 w-4 animate-pulse" />
-                  <p className="text-sm font-medium">
-                    Accessing real-time tracking data from our network of distribution centers
+              <div className="p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200 shadow-md animate-pulse">
+                <div className="flex items-center justify-center space-x-3 text-blue-700">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-semibold">
+                    Accessing real-time tracking data from our distribution centers
                   </p>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: "0.3s" }}></div>
                 </div>
               </div>
             </div>
