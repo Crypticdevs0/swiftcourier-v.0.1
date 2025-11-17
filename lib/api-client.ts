@@ -20,6 +20,7 @@ interface APIResponse<T = any> {
 /**
  * Make an authenticated API call with CSRF token support
  * Automatically includes CSRF token for state-changing requests (POST, PUT, DELETE)
+ * Includes credentials to ensure cookies are sent with requests
  */
 export async function apiCall<T = any>(
   url: string,
@@ -36,6 +37,7 @@ export async function apiCall<T = any>(
 
   const fetchOptions: RequestInit = {
     method,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...headers,
@@ -77,6 +79,7 @@ export async function apiCall<T = any>(
 
 /**
  * Make a public (unauthenticated) API call
+ * Includes credentials to ensure cookies are sent with requests
  */
 export async function publicApiCall<T = any>(
   url: string,
@@ -86,6 +89,7 @@ export async function publicApiCall<T = any>(
 
   const fetchOptions: RequestInit = {
     method,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...headers,

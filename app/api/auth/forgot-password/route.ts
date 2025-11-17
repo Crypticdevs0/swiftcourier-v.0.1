@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import store from "@/lib/store"
 import { sanitizeForgotPasswordInput, validatePasswordStrength } from "@/lib/sanitize"
 import crypto from "crypto"
+import { checkRateLimit, getResetTime } from "@/lib/rate-limiter"
+import { getClientIp, createRateLimitedResponse } from "@/lib/utils"
 
 // In-memory store for password reset tokens (in production, use a database)
 const resetTokens = new Map<
@@ -14,8 +16,24 @@ const resetTokens = new Map<
   }
 >()
 
+// Rate limit: 3 password reset requests per hour per IP
+const FORGOT_PASSWORD_RATE_LIMIT = {
+  windowMs: 60 * 60 * 1000, // 1 hour
+  maxRequests: 3,
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIp(request)
+    const rateLimitKey = `forgot-password:${clientIp}`
+
+    // Check rate limit
+    if (!checkRateLimit(rateLimitKey, FORGOT_PASSWORD_RATE_LIMIT)) {
+      const resetTime = getResetTime(rateLimitKey)
+      const retryAfter = resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : undefined
+      return createRateLimitedResponse(retryAfter)
+    }
+
     const body = await request.json()
 
     // Sanitize input
@@ -59,10 +77,8 @@ export async function POST(request: NextRequest) {
       userId: user.id,
     })
 
-    // In production, send email with reset link
-    // For demo, log the reset token
-    const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth?tab=reset&token=${resetToken}`
-    console.log(`Password reset link for ${email}: ${resetLink}`)
+    // In production, send email with reset link containing the token
+    // TODO: Implement email sending with reset link
 
     return NextResponse.json(
       {
