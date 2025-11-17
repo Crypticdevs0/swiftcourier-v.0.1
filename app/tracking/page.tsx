@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { USPSStyleTracker } from "@/components/usps-style-tracker"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { Search, Package, ArrowLeft, Zap } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // Separate component to handle search params
 function TrackingContent() {
