@@ -440,12 +440,12 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
           </div>
 
           {/* Package Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom duration-300">
             {/* Shipping Details */}
-            <Card className="border border-gray-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center">
-                  <Package className="h-4 w-4 mr-2" />
+            <Card className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardHeader className="pb-3 bg-gradient-to-br from-blue-50 to-transparent border-b border-blue-100">
+                <CardTitle className="text-base flex items-center font-bold">
+                  <Package className="h-5 w-5 mr-2 text-blue-600" />
                   Shipping Details
                 </CardTitle>
               </CardHeader>
