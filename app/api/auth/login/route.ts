@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const secret = process.env.JWT_SECRET || "dev_jwt_secret"
     const token = jwt.sign({ userId: user.id }, secret, { expiresIn: "7d" })
 
-    // Create response
+    // Create response (token is set in httpOnly cookie, not returned in JSON)
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
       },
-      token,
     })
 
     // Set HTTP-only cookie (use SameSite=None and Secure to allow cookies in embedded previews)
