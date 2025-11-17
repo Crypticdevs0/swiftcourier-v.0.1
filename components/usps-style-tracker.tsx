@@ -231,19 +231,33 @@ export function USPSStyleTracker({ trackingNumber, onError }: USPSStyleTrackerPr
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8 relative z-10">
-            <div className="text-center">
+            <div className="text-center space-y-6">
               {/* Modern animated tracking icon */}
-              <div className="relative mx-auto mb-8 w-24 h-24">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 animate-pulse"></div>
-                <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center">
-                  <Package className="h-8 w-8 text-blue-600 animate-bounce" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-ping">
-                  <Navigation className="h-3 w-3 text-white" />
+              <div className="flex justify-center mb-2">
+                <div className="relative w-32 h-32">
+                  {/* Outer gradient ring */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-400 animate-pulse"></div>
+
+                  {/* Middle pulsing ring */}
+                  <div className="absolute inset-1 rounded-full border-2 border-blue-300/50 animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+
+                  {/* Inner white container */}
+                  <div className="absolute inset-3 rounded-full bg-white shadow-lg flex items-center justify-center">
+                    <div className="relative">
+                      <Package className="h-12 w-12 text-blue-600 animate-bounce" />
+                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  {/* Rotating element indicator */}
+                  <div className="absolute -top-2 left-1/2 w-2 h-2 bg-blue-600 rounded-full -translate-x-1/2 animate-spin origin-[16rem_16rem]"></div>
                 </div>
               </div>
 
-              <p className="text-gray-700 font-medium mb-6 text-lg">{loadingMessage}</p>
+              <div>
+                <p className="text-gray-700 font-semibold mb-2 text-lg">{loadingMessage}</p>
+                <p className="text-gray-500 text-sm">This may take a few moments...</p>
+              </div>
               
               {/* Enhanced progress display */}
               <div className="max-w-md mx-auto mb-6">
