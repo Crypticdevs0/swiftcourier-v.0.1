@@ -2,9 +2,27 @@ import { type NextRequest, NextResponse } from "next/server"
 import * as jwt from "jsonwebtoken"
 import store from "@/lib/store"
 import { sanitizeRegistrationInput, validatePasswordStrength } from "@/lib/sanitize"
+import { checkRateLimit, getRemainingRequests, getResetTime } from "@/lib/rate-limiter"
+import { getClientIp, createRateLimitedResponse } from "@/lib/utils"
+
+// Rate limit: 3 registration attempts per hour per IP
+const REGISTER_RATE_LIMIT = {
+  windowMs: 60 * 60 * 1000, // 1 hour
+  maxRequests: 3,
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIp(request)
+    const rateLimitKey = `register:${clientIp}`
+
+    // Check rate limit
+    if (!checkRateLimit(rateLimitKey, REGISTER_RATE_LIMIT)) {
+      const resetTime = getResetTime(rateLimitKey)
+      const retryAfter = resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : undefined
+      return createRateLimitedResponse(retryAfter)
+    }
+
     const body = await request.json()
 
     // Sanitize input
