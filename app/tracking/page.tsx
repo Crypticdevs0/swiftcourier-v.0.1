@@ -80,19 +80,21 @@ function TrackingContent() {
         </div>
 
         {!isTracking ? (
-          <div className="max-w-md mx-auto">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="text-center">
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom duration-500">
+            <Card className="border-0 shadow-2xl hover:shadow-3xl transition-shadow duration-300">
+              <CardHeader className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-100">
                 <CardTitle className="flex items-center justify-center space-x-2">
                   <Package className="h-5 w-5 text-blue-600" />
-                  <span>Package Tracking</span>
+                  <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    Package Tracking
+                  </span>
                 </CardTitle>
-                <CardDescription>Enter your tracking number to get started</CardDescription>
+                <CardDescription className="text-gray-600">Enter your tracking number to get started</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 py-6">
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md" role="alert">
-                    <p className="text-sm text-red-800">{error}</p>
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg animate-in shake duration-300" role="alert">
+                    <p className="text-sm font-medium text-red-800">{error}</p>
                   </div>
                 )}
 
