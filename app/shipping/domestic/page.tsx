@@ -395,13 +395,52 @@ export default function DomesticShippingPage() {
                 <CardDescription>Enter your tracking number to monitor your shipment</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {trackingError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4" />
+                    {trackingError}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <Input placeholder="Enter tracking number" className="flex-1" />
-                  <Button>
+                  <Input
+                    placeholder="Enter tracking number"
+                    className="flex-1"
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleTrackPackage()}
+                  />
+                  <Button
+                    onClick={handleTrackPackage}
+                    disabled={trackingLoading}
+                  >
                     <Truck className="mr-2 h-4 w-4" />
-                    Track
+                    {trackingLoading ? "Tracking..." : "Track"}
                   </Button>
                 </div>
+
+                {trackingData && (
+                  <div className="space-y-3 mt-4 pt-4 border-t">
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm font-medium text-gray-600 mb-1">Tracking Number</p>
+                      <p className="font-mono font-bold text-lg">{trackingData.trackingNumber}</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Status</p>
+                        <Badge>{trackingData.status}</Badge>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Location</p>
+                        <p className="text-sm font-medium">{trackingData.location}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Est. Delivery</p>
+                        <p className="text-sm font-medium">{new Date(trackingData.estimatedDelivery).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
