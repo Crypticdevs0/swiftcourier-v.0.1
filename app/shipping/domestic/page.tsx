@@ -189,6 +189,13 @@ export default function DomesticShippingPage() {
                   <CardDescription>Calculate shipping costs for domestic deliveries</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {calcError && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                      <AlertCircle className="h-4 w-4" />
+                      {calcError}
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium">Service Type</label>
                     <Select value={selectedService} onValueChange={setSelectedService}>
@@ -198,7 +205,7 @@ export default function DomesticShippingPage() {
                       <SelectContent>
                         {services.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
-                            {service.name} - {service.basePrice}
+                            {service.name} - ${service.basePrice.toFixed(2)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -208,41 +215,81 @@ export default function DomesticShippingPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Zip Code From</label>
-                      <Input placeholder="00000" maxLength={5} />
+                      <Input
+                        placeholder="00000"
+                        maxLength={5}
+                        value={calculatorForm.fromZip}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, fromZip: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Zip Code To</label>
-                      <Input placeholder="00000" maxLength={5} />
+                      <Input
+                        placeholder="00000"
+                        maxLength={5}
+                        value={calculatorForm.toZip}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, toZip: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Weight (lbs)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.weight}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, weight: e.target.value })}
+                      />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Declared Value</label>
-                      <Input placeholder="$0.00" />
+                      <label className="text-sm font-medium">Declared Value ($)</label>
+                      <Input
+                        placeholder="0.00"
+                        type="number"
+                        step="0.01"
+                        value={calculatorForm.declaredValue}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, declaredValue: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium">Length (in)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.length}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, length: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Width (in)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.width}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, width: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Height (in)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.height}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, height: e.target.value })}
+                      />
                     </div>
                   </div>
 
-                  <Button className="w-full">
+                  <Button className="w-full" onClick={handleCalculateRate}>
                     <Calculator className="mr-2 h-4 w-4" />
                     Calculate Rate
                   </Button>
