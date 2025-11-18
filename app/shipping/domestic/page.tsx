@@ -305,7 +305,7 @@ export default function DomesticShippingPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm font-medium">Service</span>
-                      <Badge>{selectedService || "Select service"}</Badge>
+                      <Badge>{selectedService ? services.find((s) => s.id === selectedService)?.name : "Select service"}</Badge>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm font-medium">Estimated Delivery</span>
@@ -316,7 +316,7 @@ export default function DomesticShippingPage() {
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm font-medium">Base Rate</span>
                       <span className="text-sm font-medium">
-                        {services.find((s) => s.id === selectedService)?.basePrice || "$0.00"}
+                        {selectedService ? `$${services.find((s) => s.id === selectedService)?.basePrice.toFixed(2)}` : "$0.00"}
                       </span>
                     </div>
                     <div className="border-t pt-3">
@@ -325,9 +325,19 @@ export default function DomesticShippingPage() {
                           <DollarSign className="h-4 w-4" />
                           Total Estimated Cost
                         </span>
-                        <span className="font-bold text-lg">Calculated</span>
+                        <span className="font-bold text-lg">
+                          {estimatedCost !== null ? `$${estimatedCost.toFixed(2)}` : "N/A"}
+                        </span>
                       </div>
                     </div>
+                    {estimatedCost !== null && (
+                      <Button
+                        className="w-full mt-2"
+                        onClick={() => router.push("/shipping/create")}
+                      >
+                        Proceed to Ship
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
