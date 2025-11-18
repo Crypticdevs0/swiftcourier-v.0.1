@@ -77,12 +77,20 @@ export default function MobilePage() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Swift Courier Mobile App</h1>
           <p className="text-xl text-gray-600 mb-8">Track packages, schedule pickups, and manage shipments on the go</p>
-          <div className="flex justify-center gap-4">
-            <Button size="lg" className="bg-black text-white hover:bg-gray-800">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button
+              size="lg"
+              className="bg-black text-white hover:bg-gray-800"
+              onClick={() => window.open("https://apps.apple.com/app/swift-courier", "_blank")}
+            >
               <Download className="mr-2 h-5 w-5" />
               Download for iOS
             </Button>
-            <Button size="lg" variant="outline">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.open("https://play.google.com/store/apps/details?id=com.swiftcourier", "_blank")}
+            >
               <Download className="mr-2 h-5 w-5" />
               Download for Android
             </Button>
