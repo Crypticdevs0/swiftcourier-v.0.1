@@ -302,14 +302,37 @@ export default function MobilePage() {
                     <p className="text-sm text-blue-700 mb-3">
                       Enter your phone number to receive a download link via text message
                     </p>
-                    <div className="flex gap-2">
+
+                    {smsState.error && (
+                      <div className="flex items-center gap-2 p-2 mb-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        <AlertCircle className="h-4 w-4" />
+                        {smsState.error}
+                      </div>
+                    )}
+
+                    {smsState.success && (
+                      <div className="flex items-center gap-2 p-2 mb-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        {smsState.success}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Input
-                        placeholder="Enter phone number"
+                        placeholder="Enter phone number (e.g., 555-123-4567)"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && handleSendSMSLink()}
                         className="flex-1"
+                        disabled={smsState.loading}
                       />
-                      <Button>Send Link</Button>
+                      <Button
+                        onClick={handleSendSMSLink}
+                        disabled={smsState.loading}
+                        className="w-full sm:w-auto"
+                      >
+                        {smsState.loading ? "Sending..." : "Send Link"}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
