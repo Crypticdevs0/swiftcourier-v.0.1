@@ -8,10 +8,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Calculator, Truck, Clock, DollarSign, MapPin } from "lucide-react"
+import { Calculator, Truck, Clock, DollarSign, MapPin, AlertCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+interface CalculatorForm {
+  fromZip: string
+  toZip: string
+  weight: string
+  declaredValue: string
+  length: string
+  width: string
+  height: string
+}
+
+interface TrackingData {
+  trackingNumber: string
+  status: string
+  location: string
+  estimatedDelivery: string
+}
 
 export default function DomesticShippingPage() {
+  const router = useRouter()
   const [selectedService, setSelectedService] = useState("")
+  const [calculatorForm, setCalculatorForm] = useState<CalculatorForm>({
+    fromZip: "",
+    toZip: "",
+    weight: "",
+    declaredValue: "",
+    length: "",
+    width: "",
+    height: "",
+  })
+  const [estimatedCost, setEstimatedCost] = useState<number | null>(null)
+  const [trackingInput, setTrackingInput] = useState("")
+  const [trackingData, setTrackingData] = useState<TrackingData | null>(null)
+  const [trackingLoading, setTrackingLoading] = useState(false)
+  const [trackingError, setTrackingError] = useState("")
+  const [calcError, setCalcError] = useState("")
 
   const services = [
     { id: "express", name: "Express Overnight", days: "1 business day", basePrice: "$45.99" },
