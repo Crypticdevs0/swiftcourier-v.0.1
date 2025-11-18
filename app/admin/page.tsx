@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useAdminRealtime } from "@/hooks/useAdminRealtime"
-import { useAdminPackages } from "@/hooks/useAdminPackages"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,62 +26,66 @@ import {
 } from "@/components/ui/select"
 import {
   Package,
-  Users,
-  TrendingUp,
-  AlertTriangle,
+  MapPin,
+  Activity,
   LogOut,
   RefreshCw,
   BarChart3,
   Settings,
   Search,
-  Filter,
-  Download,
   Plus,
   Eye,
-  MapPin,
   Clock,
   DollarSign,
   Truck,
-  Activity,
   Bell,
   ArrowUp,
   ArrowDown,
-  MoreHorizontal,
-  WifiOff,
-  Wifi,
   Edit2,
+  Trash2,
+  Wifi,
+  WifiOff,
 } from "lucide-react"
+import type { Product, Location, TrackingNumber, TrackingActivity } from "@/lib/models"
 
-interface AdminStats {
-  total: number
+interface DashboardStats {
+  totalTrackingNumbers: number
+  activeShipments: number
+  deliveredToday: number
+  exceptionCount: number
+  totalRevenue: number
+  averageDeliveryTime: number
   byStatus: Record<string, number>
-  recentEvents: number
+  byPriority: Record<string, number>
 }
 
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuth()
-  const { packages, fetchPackages } = useAdminPackages()
-  const { isConnected, stats, events, connect, disconnect } = useAdminRealtime()
-  
+  const { isConnected } = useAdminRealtime()
+
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [searchTerm, setSearchTerm] = useState("")
-  const [filteredPackages, setFilteredPackages] = useState(packages)
   const [refreshing, setRefreshing] = useState(false)
-  const [adminStats, setAdminStats] = useState<AdminStats>({
-    total: 0,
-    byStatus: {},
-    recentEvents: 0,
-  })
 
-  const [selectedPackage, setSelectedPackage] = useState<any>(null)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [newStatus, setNewStatus] = useState("")
-  const [reason, setReason] = useState("")
-  const [isUpdating, setIsUpdating] = useState(false)
+  // Data states
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [trackingNumbers, setTrackingNumbers] = useState<TrackingNumber[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
+  const [activities, setActivities] = useState<TrackingActivity[]>([])
 
-  const { updatePackageStatus, addPackageEvent } = useAdminPackages()
+  // Dialog states
+  const [selectedTracking, setSelectedTracking] = useState<TrackingNumber | null>(null)
+  const [trackingDialogOpen, setTrackingDialogOpen] = useState(false)
+  const [productDialogOpen, setProductDialogOpen] = useState(false)
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false)
+
+  // Form states
+  const [trackingFormData, setTrackingFormData] = useState<any>({})
+  const [productFormData, setProductFormData] = useState<any>({})
+  const [locationFormData, setLocationFormData] = useState<any>({})
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -96,112 +99,168 @@ export default function AdminDashboard() {
     }
 
     setLoading(false)
+    fetchAllData()
   }, [isAuthenticated, user, router])
 
-  useEffect(() => {
-    fetchPackages()
-  }, [fetchPackages])
+  const fetchAllData = async () => {
+    await Promise.all([
+      fetchTrackingNumbers(),
+      fetchProducts(),
+      fetchLocations(),
+      fetchActivities(),
+    ])
+  }
 
-  useEffect(() => {
-    if (stats) {
-      setAdminStats(stats)
+  const fetchTrackingNumbers = async () => {
+    try {
+      const response = await fetch("/api/admin/tracking-numbers", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setTrackingNumbers(data.data)
+        if (data.stats) setStats(data.stats)
+      }
+    } catch (error) {
+      console.error("Error fetching tracking numbers:", error)
     }
-  }, [stats])
+  }
 
-  useEffect(() => {
-    const filtered = packages.filter((pkg) => {
-      const search = searchTerm.toLowerCase()
-      return (
-        pkg.trackingNumber.toLowerCase().includes(search) ||
-        pkg.sender.name.toLowerCase().includes(search) ||
-        pkg.recipient.name.toLowerCase().includes(search)
-      )
-    })
-    setFilteredPackages(filtered)
-  }, [packages, searchTerm])
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("/api/admin/products", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setProducts(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    }
+  }
+
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch("/api/admin/locations", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching locations:", error)
+    }
+  }
+
+  const fetchActivities = async () => {
+    try {
+      const response = await fetch("/api/admin/activities?limit=50", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setActivities(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching activities:", error)
+    }
+  }
 
   const handleLogout = async () => {
-    disconnect()
     await logout()
     router.push("/auth")
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchPackages()
+    await fetchAllData()
     await new Promise((resolve) => setTimeout(resolve, 500))
     setRefreshing(false)
   }
 
-  const handleEditStatus = (pkg: any) => {
-    setSelectedPackage(pkg)
-    setNewStatus(pkg.status)
-    setReason("")
-    setEditDialogOpen(true)
+  const handleCreateTracking = async () => {
+    try {
+      const response = await fetch("/api/admin/tracking-numbers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "create",
+          ...trackingFormData,
+        }),
+      })
+
+      if (response.ok) {
+        setTrackingDialogOpen(false)
+        setTrackingFormData({})
+        await fetchTrackingNumbers()
+      }
+    } catch (error) {
+      console.error("Error creating tracking number:", error)
+    }
   }
 
-  const handleUpdateStatus = async () => {
-    if (!selectedPackage || !newStatus) return
-
-    setIsUpdating(true)
+  const handleCreateProduct = async () => {
     try {
-      const result = await updatePackageStatus(selectedPackage.trackingNumber, newStatus, reason)
-      if (result.success) {
-        setEditDialogOpen(false)
-        setSelectedPackage(null)
-        await fetchPackages()
+      const response = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "create",
+          ...productFormData,
+        }),
+      })
+
+      if (response.ok) {
+        setProductDialogOpen(false)
+        setProductFormData({})
+        await fetchProducts()
       }
-    } finally {
-      setIsUpdating(false)
+    } catch (error) {
+      console.error("Error creating product:", error)
+    }
+  }
+
+  const handleCreateLocation = async () => {
+    try {
+      const response = await fetch("/api/admin/locations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "create",
+          ...locationFormData,
+        }),
+      })
+
+      if (response.ok) {
+        setLocationDialogOpen(false)
+        setLocationFormData({})
+        await fetchLocations()
+      }
+    } catch (error) {
+      console.error("Error creating location:", error)
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-      case "Operational":
-      case "Healthy":
-      case "Connected":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800"
       case "in_transit":
       case "picked_up":
-      case "Processing":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800"
       case "out_for_delivery":
       case "pending":
-      case "Maintenance":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800"
       case "exception":
-      case "Down":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800"
     }
-  }
-
-  const getConnectionStatusBadge = () => {
-    return (
-      <Badge
-        variant="outline"
-        className={`flex items-center gap-1 ${
-          isConnected
-            ? "bg-green-50 text-green-700 border-green-200"
-            : "bg-red-50 text-red-700 border-red-200"
-        }`}
-      >
-        {isConnected ? (
-          <>
-            <Wifi className="h-3 w-3" />
-            Live
-          </>
-        ) : (
-          <>
-            <WifiOff className="h-3 w-3" />
-            Offline
-          </>
-        )}
-      </Badge>
-    )
   }
 
   if (loading) {
@@ -221,82 +280,66 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Enhanced Header */}
+      {/* Header */}
       <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
-                  <Truck className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                    Swift Courier Admin
-                  </h1>
-                  <p className="text-sm text-slate-600">Real-time Operations Dashboard</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
+                <Truck className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                  Swift Courier Admin
+                </h1>
+                <p className="text-sm text-slate-600">Unified Tracking System</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Search */}
               <div className="relative hidden md:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search packages..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-64 bg-slate-50 border-slate-200"
                 />
               </div>
 
-              {/* Connection Status */}
-              <div>{getConnectionStatusBadge()}</div>
+              <Badge
+                variant="outline"
+                className={`flex items-center gap-1 ${
+                  isConnected
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                }`}
+              >
+                {isConnected ? (
+                  <>
+                    <Wifi className="h-3 w-3" />
+                    Live
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3" />
+                    Offline
+                  </>
+                )}
+              </Badge>
 
-              {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {events.length > 9 ? "9+" : events.length}
-                </span>
+              <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
 
-              {/* User Profile */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-slate-900">{user.name}</p>
-                  <Badge className="text-xs bg-red-100 text-red-800 border-red-200">
-                    ADMIN
-                  </Badge>
-                </div>
-                <div className="h-8 w-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white font-medium">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="hover:bg-slate-100"
-                  title="Refresh data"
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  title="Logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -304,22 +347,26 @@ export default function AdminDashboard() {
 
       <div className="container mx-auto p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-5 bg-white p-1 shadow-sm">
+          <TabsList className="grid w-full grid-cols-6 bg-white p-1 shadow-sm">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="packages" className="flex items-center gap-2">
+            <TabsTrigger value="tracking" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Packages</span>
+              <span className="hidden sm:inline">Tracking</span>
             </TabsTrigger>
-            <TabsTrigger value="realtime" className="flex items-center gap-2">
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="locations" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span className="hidden sm:inline">Locations</span>
+            </TabsTrigger>
+            <TabsTrigger value="activities" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Realtime</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Analytics</span>
+              <span className="hidden sm:inline">Activities</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -327,270 +374,97 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-blue-800">Total Packages</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-800">
+                    Total Shipments
+                  </CardTitle>
                   <Package className="h-5 w-5 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-blue-900">{adminStats.total}</div>
-                  <div className="text-xs text-blue-700 mt-1">
-                    Real-time count
+                  <div className="text-3xl font-bold text-blue-900">
+                    {stats?.totalTrackingNumbers || 0}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-green-800">Delivered</CardTitle>
-                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <CardTitle className="text-sm font-medium text-green-800">
+                    Delivered Today
+                  </CardTitle>
+                  <ArrowUp className="h-5 w-5 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-900">
-                    {adminStats.byStatus["delivered"] || 0}
-                  </div>
-                  <div className="text-xs text-green-700 mt-1">
-                    Successfully delivered
-                  </div>
+                  <div className="text-3xl font-bold text-green-900">{stats?.deliveredToday || 0}</div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-orange-800">In Transit</CardTitle>
+                  <CardTitle className="text-sm font-medium text-orange-800">
+                    In Transit
+                  </CardTitle>
                   <Truck className="h-5 w-5 text-orange-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-900">
-                    {(adminStats.byStatus["in_transit"] || 0) + (adminStats.byStatus["picked_up"] || 0)}
-                  </div>
-                  <div className="text-xs text-orange-700 mt-1">
-                    On the way
+                    {stats?.activeShipments || 0}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-red-800">Issues</CardTitle>
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <CardTitle className="text-sm font-medium text-red-800">Exceptions</CardTitle>
+                  <ArrowDown className="h-5 w-5 text-red-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-red-900">
-                    {adminStats.byStatus["exception"] || 0}
-                  </div>
-                  <div className="text-xs text-red-700 mt-1">
-                    Exceptions reported
-                  </div>
+                  <div className="text-3xl font-bold text-red-900">{stats?.exceptionCount || 0}</div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Recent Activity */}
+            {/* Revenue Card */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Real-time Event Feed</CardTitle>
-                <CardDescription>Latest package updates and system events</CardDescription>
+                <CardTitle>Revenue Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold text-slate-900">
+                  ${stats?.totalRevenue?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-sm text-slate-600 mt-2">Total revenue from all shipments</p>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activities */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle>Recent Activities</CardTitle>
+                <CardDescription>Latest tracking updates</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {events.length === 0 ? (
-                    <p className="text-sm text-slate-600">No events yet. Real-time updates will appear here.</p>
-                  ) : (
-                    events.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex items-start justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
-                      >
+                  {activities.slice(0, 10).map((activity) => (
+                    <div key={activity.id} className="p-3 bg-slate-50 rounded-lg border">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {event.type.replace("_", " ").toUpperCase()}
-                            </Badge>
-                            <span className="text-xs text-slate-500">
-                              {new Date(event.timestamp).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-900">
-                            {event.data.trackingNumber && (
-                              <span className="font-medium">{event.data.trackingNumber}: </span>
-                            )}
-                            {event.type === "status_changed"
-                              ? `Status changed from ${event.data.oldStatus} to ${event.data.newStatus}`
-                              : event.type === "package_updated"
-                              ? `Package updated`
-                              : event.type === "event_added"
-                              ? `Event added`
-                              : "Update"}
+                          <Badge variant="outline" className="text-xs mb-1">
+                            {activity.type}
+                          </Badge>
+                          <p className="text-sm text-slate-900 font-medium">
+                            {activity.trackingNumber}
+                          </p>
+                          <p className="text-sm text-slate-600">{activity.description}</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {new Date(activity.timestamp).toLocaleString()}
                           </p>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="packages" className="space-y-6">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-xl">Package Management</CardTitle>
-                    <CardDescription>Monitor and manage all packages in real-time</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b bg-slate-50">
-                      <tr>
-                        <th className="text-left py-3 px-4 font-medium">Tracking #</th>
-                        <th className="text-left py-3 px-4 font-medium">Customer</th>
-                        <th className="text-left py-3 px-4 font-medium">Status</th>
-                        <th className="text-left py-3 px-4 font-medium">Destination</th>
-                        <th className="text-left py-3 px-4 font-medium">Value</th>
-                        <th className="text-left py-3 px-4 font-medium">Updated</th>
-                        <th className="text-left py-3 px-4 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPackages.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="py-8 px-4 text-center text-slate-500">
-                            No packages found
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredPackages.map((pkg) => (
-                          <tr key={pkg.id} className="border-b hover:bg-slate-50 transition">
-                            <td className="py-3 px-4 font-medium text-slate-900">{pkg.trackingNumber}</td>
-                            <td className="py-3 px-4">{pkg.sender.name}</td>
-                            <td className="py-3 px-4">
-                              <Badge className={getStatusColor(pkg.status)}>
-                                {pkg.status.replace("_", " ").toUpperCase()}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4 text-slate-600">
-                              {pkg.recipient.city}, {pkg.recipient.state}
-                            </td>
-                            <td className="py-3 px-4 font-medium">${pkg.cost.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-xs text-slate-500">
-                              {new Date(pkg.updatedAt).toLocaleDateString()}
-                            </td>
-                            <td className="py-3 px-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditStatus(pkg)}
-                                className="gap-1"
-                              >
-                                <Edit2 className="h-3 w-3" />
-                                Edit
-                              </Button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="realtime" className="space-y-6">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl">Real-time Connection</CardTitle>
-                    <CardDescription>Live data streaming and system status</CardDescription>
-                  </div>
-                  {getConnectionStatusBadge()}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-2">Connection Status</p>
-                    <p className="text-lg font-semibold text-slate-900">
-                      {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-2">Recent Events</p>
-                    <p className="text-lg font-semibold text-slate-900">{events.length}</p>
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <h3 className="font-semibold mb-3">Event History</h3>
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {events.length === 0 ? (
-                      <p className="text-sm text-slate-600">Waiting for real-time updates...</p>
-                    ) : (
-                      events.map((event) => (
-                        <div key={event.id} className="p-3 bg-slate-50 rounded-lg text-sm">
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline">{event.type}</Badge>
-                            <span className="text-xs text-slate-500">
-                              {new Date(event.timestamp).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          {event.changes && (
-                            <pre className="text-xs bg-slate-900 text-slate-100 p-2 rounded mt-2 overflow-x-auto">
-                              {JSON.stringify(event.changes, null, 2)}
-                            </pre>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle>Package Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Object.entries(adminStats.byStatus).map(([status, count]) => (
-                    <div key={status} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium capitalize">{status.replace("_", " ")}</p>
-                        <div className="w-full bg-slate-200 rounded-full h-2 mt-1">
-                          <div
-                            className="bg-blue-500 h-2 rounded-full"
-                            style={{
-                              width: `${(count / adminStats.total) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <span className="ml-4 font-semibold">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -598,22 +472,232 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
+          {/* Tracking Numbers Tab */}
+          <TabsContent value="tracking" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Tracking Numbers</CardTitle>
+                    <CardDescription>Manage all shipments</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setTrackingDialogOpen(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Tracking
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left py-3 px-4">Tracking #</th>
+                        <th className="text-left py-3 px-4">Sender</th>
+                        <th className="text-left py-3 px-4">Recipient</th>
+                        <th className="text-left py-3 px-4">Status</th>
+                        <th className="text-left py-3 px-4">Priority</th>
+                        <th className="text-left py-3 px-4">Cost</th>
+                        <th className="text-left py-3 px-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trackingNumbers.map((t) => (
+                        <tr key={t.id} className="border-b hover:bg-slate-50">
+                          <td className="py-3 px-4 font-mono font-medium">{t.trackingNumber}</td>
+                          <td className="py-3 px-4 text-sm">{t.senderName}</td>
+                          <td className="py-3 px-4 text-sm">{t.recipientName}</td>
+                          <td className="py-3 px-4">
+                            <Badge className={getStatusColor(t.status)}>
+                              {t.status.replace("_", " ").toUpperCase()}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-sm capitalize">{t.priority}</td>
+                          <td className="py-3 px-4 font-medium">${t.cost.toFixed(2)}</td>
+                          <td className="py-3 px-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTracking(t)
+                                setTrackingDialogOpen(true)
+                              }}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Products Tab */}
+          <TabsContent value="products" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Products</CardTitle>
+                    <CardDescription>Manage goods and products</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setProductDialogOpen(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {products.map((p) => (
+                    <Card key={p.id} className="border">
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-slate-500">SKU</p>
+                            <p className="font-mono font-semibold">{p.sku}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{p.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-600">{p.description}</p>
+                          </div>
+                          <div className="flex justify-between pt-2">
+                            <Badge variant="outline">{p.category}</Badge>
+                            <span className="text-sm font-semibold">${p.pricing.baseCost}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Locations Tab */}
+          <TabsContent value="locations" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Locations</CardTitle>
+                    <CardDescription>Pickup and dropoff points</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setLocationDialogOpen(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Location
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {locations.map((l) => (
+                    <Card key={l.id} className="border">
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-slate-900">{l.name}</p>
+                              <Badge variant="outline" className="mt-1 text-xs">
+                                {l.type}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            <p>{l.address.street}</p>
+                            <p>
+                              {l.address.city}, {l.address.state} {l.address.zipCode}
+                            </p>
+                          </div>
+                          <div className="text-sm">
+                            <p className="font-medium text-slate-900">Contact</p>
+                            <p className="text-slate-600">{l.contact.personName}</p>
+                            <p className="text-slate-600">{l.contact.phone}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Activities Tab */}
+          <TabsContent value="activities" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle>All Activities</CardTitle>
+                <CardDescription>Complete tracking activity log</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {activities.map((a) => (
+                    <div
+                      key={a.id}
+                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono font-semibold text-sm">
+                              {a.trackingNumber}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {a.type}
+                            </Badge>
+                            <Badge className={getStatusColor(a.status)}>
+                              {a.status.replace("_", " ").toUpperCase()}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-700">{a.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {a.location}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(a.timestamp).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl">Admin Settings</CardTitle>
-                <CardDescription>Configure admin dashboard preferences</CardDescription>
+                <CardTitle>System Settings</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm font-medium text-blue-900">Real-time Updates</p>
-                  <p className="text-sm text-blue-800 mt-1">
-                    Connected to live data stream. Updates are pushed to your dashboard automatically.
-                  </p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm font-medium text-slate-900">Dashboard Version</p>
-                  <p className="text-sm text-slate-600 mt-1">Real-time Admin Dashboard v2.0</p>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-900">Unified Tracking System</p>
+                    <p className="text-sm text-blue-800 mt-1">
+                      Manage all tracking numbers, products, and locations from one dashboard
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -621,75 +705,282 @@ export default function AdminDashboard() {
         </Tabs>
       </div>
 
-      {/* Edit Status Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      {/* Create Tracking Dialog */}
+      <Dialog open={trackingDialogOpen} onOpenChange={setTrackingDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Update Package Status</DialogTitle>
-            <DialogDescription>
-              Change the status for package{" "}
-              <span className="font-semibold">{selectedPackage?.trackingNumber}</span>
-            </DialogDescription>
+            <DialogTitle>Create Tracking Number</DialogTitle>
+            <DialogDescription>Create a new shipment tracking number</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-900">Current Status</label>
-              <p className="text-sm text-slate-600 mt-1 p-2 bg-slate-50 rounded">
-                {selectedPackage?.status.replace("_", " ").toUpperCase()}
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-900 mb-2 block">New Status</label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select new status" />
+              <label className="text-sm font-medium">Product</label>
+              <Select
+                value={trackingFormData.productId || ""}
+                onValueChange={(val) =>
+                  setTrackingFormData({ ...trackingFormData, productId: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="picked_up">Picked Up</SelectItem>
-                  <SelectItem value="in_transit">In Transit</SelectItem>
-                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="exception">Exception</SelectItem>
+                  {products.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-900 mb-2 block">
-                Reason (optional)
-              </label>
-              <Input
-                placeholder="e.g., Delayed due to weather"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
+              <label className="text-sm font-medium">Pickup Location</label>
+              <Select
+                value={trackingFormData.senderLocationId || ""}
+                onValueChange={(val) =>
+                  setTrackingFormData({ ...trackingFormData, senderLocationId: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select pickup location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations
+                    .filter((l) => l.type === "pickup" || l.type === "warehouse")
+                    .map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            <div>
+              <label className="text-sm font-medium">Dropoff Location</label>
+              <Select
+                value={trackingFormData.recipientLocationId || ""}
+                onValueChange={(val) =>
+                  setTrackingFormData({ ...trackingFormData, recipientLocationId: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select dropoff location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations
+                    .filter((l) => l.type === "dropoff" || l.type === "hub")
+                    .map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Input
+              placeholder="Recipient Name"
+              value={trackingFormData.recipientName || ""}
+              onChange={(e) =>
+                setTrackingFormData({
+                  ...trackingFormData,
+                  recipientName: e.target.value,
+                })
+              }
+            />
+
+            <Input
+              placeholder="Sender Name"
+              value={trackingFormData.senderName || ""}
+              onChange={(e) =>
+                setTrackingFormData({ ...trackingFormData, senderName: e.target.value })
+              }
+            />
+
+            <Select
+              value={trackingFormData.priority || "standard"}
+              onValueChange={(val) =>
+                setTrackingFormData({ ...trackingFormData, priority: val })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="express">Express</SelectItem>
+                <SelectItem value="overnight">Overnight</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="number"
+              placeholder="Cost"
+              value={trackingFormData.cost || ""}
+              onChange={(e) =>
+                setTrackingFormData({ ...trackingFormData, cost: parseFloat(e.target.value) })
+              }
+            />
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditDialogOpen(false)}
-              disabled={isUpdating}
-            >
+            <Button variant="outline" onClick={() => setTrackingDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleUpdateStatus}
-              disabled={isUpdating || !newStatus}
-              className="bg-red-600 hover:bg-red-700"
+            <Button onClick={handleCreateTracking} className="bg-red-600 hover:bg-red-700">
+              Create Tracking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Product Dialog */}
+      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Product</DialogTitle>
+            <DialogDescription>Create a new product</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="SKU"
+              value={productFormData.sku || ""}
+              onChange={(e) =>
+                setProductFormData({ ...productFormData, sku: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Product Name"
+              value={productFormData.name || ""}
+              onChange={(e) =>
+                setProductFormData({ ...productFormData, name: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Description"
+              value={productFormData.description || ""}
+              onChange={(e) =>
+                setProductFormData({
+                  ...productFormData,
+                  description: e.target.value,
+                })
+              }
+            />
+            <Input
+              placeholder="Category"
+              value={productFormData.category || ""}
+              onChange={(e) =>
+                setProductFormData({ ...productFormData, category: e.target.value })
+              }
+            />
+            <Input
+              type="number"
+              placeholder="Base Cost"
+              value={productFormData.pricing?.baseCost || ""}
+              onChange={(e) =>
+                setProductFormData({
+                  ...productFormData,
+                  pricing: { baseCost: parseFloat(e.target.value), currency: "USD" },
+                })
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProductDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProduct} className="bg-red-600 hover:bg-red-700">
+              Add Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Location Dialog */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Location</DialogTitle>
+            <DialogDescription>Create a new pickup/dropoff location</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="Location Name"
+              value={locationFormData.name || ""}
+              onChange={(e) =>
+                setLocationFormData({ ...locationFormData, name: e.target.value })
+              }
+            />
+            <Select
+              value={locationFormData.type || "pickup"}
+              onValueChange={(val) =>
+                setLocationFormData({ ...locationFormData, type: val })
+              }
             >
-              {isUpdating ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Status"
-              )}
+              <SelectTrigger>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pickup">Pickup</SelectItem>
+                <SelectItem value="dropoff">Dropoff</SelectItem>
+                <SelectItem value="hub">Hub</SelectItem>
+                <SelectItem value="warehouse">Warehouse</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Street Address"
+              value={locationFormData.address?.street || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  address: { ...locationFormData.address, street: e.target.value },
+                })
+              }
+            />
+            <Input
+              placeholder="City"
+              value={locationFormData.address?.city || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  address: { ...locationFormData.address, city: e.target.value },
+                })
+              }
+            />
+            <Input
+              placeholder="Contact Person"
+              value={locationFormData.contact?.personName || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  contact: { ...locationFormData.contact, personName: e.target.value },
+                })
+              }
+            />
+            <Input
+              placeholder="Phone"
+              value={locationFormData.contact?.phone || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  contact: { ...locationFormData.contact, phone: e.target.value },
+                })
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLocationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateLocation} className="bg-red-600 hover:bg-red-700">
+              Add Location
             </Button>
           </DialogFooter>
         </DialogContent>
