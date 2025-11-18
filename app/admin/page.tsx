@@ -2,194 +2,268 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
+import { useAdminRealtime } from "@/hooks/useAdminRealtime"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Package,
-  Users,
-  TrendingUp,
-  AlertTriangle,
+  MapPin,
+  Activity,
   LogOut,
   RefreshCw,
   BarChart3,
   Settings,
   Search,
-  Filter,
-  Download,
   Plus,
   Eye,
-  MapPin,
   Clock,
   DollarSign,
   Truck,
-  Activity,
   Bell,
   ArrowUp,
   ArrowDown,
-  MoreHorizontal,
+  Edit2,
+  Trash2,
+  Wifi,
+  WifiOff,
 } from "lucide-react"
-
-interface UserInfo {
-  name: string
-  role: string
-  username: string
-}
+import type { Product, Location, TrackingNumber, TrackingActivity } from "@/lib/models"
 
 interface DashboardStats {
-  totalPackages: number
-  activeUsers: number
-  revenue: number
-  issues: number
-  packagesChange: number
-  usersChange: number
-  revenueChange: number
-  issuesChange: number
-}
-
-interface RecentShipment {
-  id: string
-  status: "Delivered" | "In Transit" | "Processing" | "Delayed"
-  customer: string
-  destination: string
-  time: string
-  amount: number
-}
-
-interface SystemStatus {
-  service: string
-  status: "Operational" | "Healthy" | "Connected" | "Maintenance" | "Down"
-  uptime: string
+  totalTrackingNumbers: number
+  activeShipments: number
+  deliveredToday: number
+  exceptionCount: number
+  totalRevenue: number
+  averageDeliveryTime: number
+  byStatus: Record<string, number>
+  byPriority: Record<string, number>
 }
 
 export default function AdminDashboard() {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState("overview")
-  const [refreshing, setRefreshing] = useState(false)
   const router = useRouter()
+  const { user, isAuthenticated, logout } = useAuth()
+  const { isConnected } = useAdminRealtime()
 
-  // Mock data
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPackages: 12847,
-    activeUsers: 3421,
-    revenue: 89432,
-    issues: 23,
-    packagesChange: 12,
-    usersChange: 8,
-    revenueChange: 15,
-    issuesChange: -5,
-  })
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState("overview")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
 
-  const [recentShipments, setRecentShipments] = useState<RecentShipment[]>([
-    {
-      id: "SW123456",
-      status: "Delivered",
-      customer: "John Doe",
-      destination: "New York",
-      time: "2 hours ago",
-      amount: 45.99,
-    },
-    {
-      id: "SW123457",
-      status: "In Transit",
-      customer: "Jane Smith",
-      destination: "Los Angeles",
-      time: "4 hours ago",
-      amount: 67.5,
-    },
-    {
-      id: "SW123458",
-      status: "Processing",
-      customer: "Bob Johnson",
-      destination: "Chicago",
-      time: "6 hours ago",
-      amount: 32.25,
-    },
-    {
-      id: "SW123459",
-      status: "Delayed",
-      customer: "Alice Brown",
-      destination: "Miami",
-      time: "8 hours ago",
-      amount: 78.99,
-    },
-  ])
+  // Data states
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [trackingNumbers, setTrackingNumbers] = useState<TrackingNumber[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
+  const [activities, setActivities] = useState<TrackingActivity[]>([])
 
-  const [systemStatus, setSystemStatus] = useState<SystemStatus[]>([
-    { service: "API Gateway", status: "Operational", uptime: "99.9%" },
-    { service: "Database", status: "Healthy", uptime: "99.8%" },
-    { service: "Payment Gateway", status: "Connected", uptime: "99.7%" },
-    { service: "Tracking Service", status: "Maintenance", uptime: "98.5%" },
-  ])
+  // Dialog states
+  const [selectedTracking, setSelectedTracking] = useState<TrackingNumber | null>(null)
+  const [trackingDialogOpen, setTrackingDialogOpen] = useState(false)
+  const [productDialogOpen, setProductDialogOpen] = useState(false)
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false)
+
+  // Form states
+  const [trackingFormData, setTrackingFormData] = useState<any>({})
+  const [productFormData, setProductFormData] = useState<any>({})
+  const [locationFormData, setLocationFormData] = useState<any>({})
 
   useEffect(() => {
-    // Check authentication
-    const authStatus = localStorage.getItem("admin_authenticated")
-    const name = localStorage.getItem("admin_name")
-    const role = localStorage.getItem("admin_role")
-    const username = localStorage.getItem("admin_username")
-
-    if (authStatus === "true" && name && role && username) {
-      setUserInfo({ name, role, username })
-    } else {
+    if (!isAuthenticated) {
       router.push("/admin/login")
+      return
     }
-    setIsLoading(false)
-  }, [router])
 
-  const handleLogout = () => {
-    localStorage.removeItem("admin_authenticated")
-    localStorage.removeItem("admin_role")
-    localStorage.removeItem("admin_name")
-    localStorage.removeItem("admin_username")
-    router.push("/admin/login")
+    if (user?.role !== "admin") {
+      router.push("/dashboard")
+      return
+    }
+
+    setLoading(false)
+    fetchAllData()
+  }, [isAuthenticated, user, router])
+
+  const fetchAllData = async () => {
+    await Promise.all([
+      fetchTrackingNumbers(),
+      fetchProducts(),
+      fetchLocations(),
+      fetchActivities(),
+    ])
+  }
+
+  const fetchTrackingNumbers = async () => {
+    try {
+      const response = await fetch("/api/admin/tracking-numbers", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setTrackingNumbers(data.data)
+        if (data.stats) setStats(data.stats)
+      }
+    } catch (error) {
+      console.error("Error fetching tracking numbers:", error)
+    }
+  }
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("/api/admin/products", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setProducts(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    }
+  }
+
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch("/api/admin/locations", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching locations:", error)
+    }
+  }
+
+  const fetchActivities = async () => {
+    try {
+      const response = await fetch("/api/admin/activities?limit=50", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setActivities(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching activities:", error)
+    }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/auth")
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    // Simulate API refresh
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await fetchAllData()
+    await new Promise((resolve) => setTimeout(resolve, 500))
     setRefreshing(false)
+  }
+
+  const handleCreateTracking = async () => {
+    try {
+      const response = await fetch("/api/admin/tracking-numbers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "create",
+          ...trackingFormData,
+        }),
+      })
+
+      if (response.ok) {
+        setTrackingDialogOpen(false)
+        setTrackingFormData({})
+        await fetchTrackingNumbers()
+      }
+    } catch (error) {
+      console.error("Error creating tracking number:", error)
+    }
+  }
+
+  const handleCreateProduct = async () => {
+    try {
+      const response = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "create",
+          ...productFormData,
+        }),
+      })
+
+      if (response.ok) {
+        setProductDialogOpen(false)
+        setProductFormData({})
+        await fetchProducts()
+      }
+    } catch (error) {
+      console.error("Error creating product:", error)
+    }
+  }
+
+  const handleCreateLocation = async () => {
+    try {
+      const response = await fetch("/api/admin/locations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "create",
+          ...locationFormData,
+        }),
+      })
+
+      if (response.ok) {
+        setLocationDialogOpen(false)
+        setLocationFormData({})
+        await fetchLocations()
+      }
+    } catch (error) {
+      console.error("Error creating location:", error)
+    }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Delivered":
-      case "Operational":
-      case "Healthy":
-      case "Connected":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "In Transit":
-      case "Processing":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "Delayed":
-      case "Maintenance":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "Down":
-        return "bg-red-100 text-red-800 border-red-200"
+      case "delivered":
+        return "bg-green-100 text-green-800"
+      case "in_transit":
+      case "picked_up":
+        return "bg-blue-100 text-blue-800"
+      case "out_for_delivery":
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      case "exception":
+        return "bg-red-100 text-red-800"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800"
     }
   }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "super_admin":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "manager":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "support":
-        return "bg-green-100 text-green-800 border-green-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="text-center">
@@ -200,83 +274,72 @@ export default function AdminDashboard() {
     )
   }
 
-  if (!userInfo) {
-    return null // Will redirect to login
+  if (!user) {
+    return null
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Enhanced Header */}
+      {/* Header */}
       <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
-                  <Truck className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                    Swift Courier Admin
-                  </h1>
-                  <p className="text-sm text-slate-600">Operations Dashboard</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
+                <Truck className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                  Swift Courier Admin
+                </h1>
+                <p className="text-sm text-slate-600">Unified Tracking System</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Search */}
               <div className="relative hidden md:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search packages, users..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-64 bg-slate-50 border-slate-200"
                 />
               </div>
 
-              {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
+              <Badge
+                variant="outline"
+                className={`flex items-center gap-1 ${
+                  isConnected
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                }`}
+              >
+                {isConnected ? (
+                  <>
+                    <Wifi className="h-3 w-3" />
+                    Live
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3" />
+                    Offline
+                  </>
+                )}
+              </Badge>
+
+              <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
 
-              {/* User Profile */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-slate-900">{userInfo.name}</p>
-                  <Badge className={`text-xs ${getRoleColor(userInfo.role)}`}>
-                    {userInfo.role.replace("_", " ").toUpperCase()}
-                  </Badge>
-                </div>
-                <div className="h-8 w-8 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center text-white font-medium">
-                  {userInfo.name.charAt(0).toUpperCase()}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="hover:bg-slate-100"
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -284,26 +347,26 @@ export default function AdminDashboard() {
 
       <div className="container mx-auto p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 bg-white p-1 shadow-sm">
+          <TabsList className="grid w-full grid-cols-6 bg-white p-1 shadow-sm">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="packages" className="flex items-center gap-2">
+            <TabsTrigger value="tracking" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Packages</span>
+              <span className="hidden sm:inline">Tracking</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Users</span>
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Products</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Analytics</span>
+            <TabsTrigger value="locations" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span className="hidden sm:inline">Locations</span>
             </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
+            <TabsTrigger value="activities" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">System</span>
+              <span className="hidden sm:inline">Activities</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -311,192 +374,160 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-blue-800">Total Packages</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-800">
+                    Total Shipments
+                  </CardTitle>
                   <Package className="h-5 w-5 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-blue-900">{stats.totalPackages.toLocaleString()}</div>
-                  <div className="flex items-center gap-1 text-sm">
-                    <ArrowUp className="h-3 w-3 text-green-600" />
-                    <span className="text-green-600 font-medium">+{stats.packagesChange}%</span>
-                    <span className="text-blue-700">from last month</span>
+                  <div className="text-3xl font-bold text-blue-900">
+                    {stats?.totalTrackingNumbers || 0}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-green-800">Active Users</CardTitle>
-                  <Users className="h-5 w-5 text-green-600" />
+                  <CardTitle className="text-sm font-medium text-green-800">
+                    Delivered Today
+                  </CardTitle>
+                  <ArrowUp className="h-5 w-5 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-900">{stats.activeUsers.toLocaleString()}</div>
-                  <div className="flex items-center gap-1 text-sm">
-                    <ArrowUp className="h-3 w-3 text-green-600" />
-                    <span className="text-green-600 font-medium">+{stats.usersChange}%</span>
-                    <span className="text-green-700">from last month</span>
+                  <div className="text-3xl font-bold text-green-900">{stats?.deliveredToday || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-orange-800">
+                    In Transit
+                  </CardTitle>
+                  <Truck className="h-5 w-5 text-orange-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-900">
+                    {stats?.activeShipments || 0}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-purple-800">Revenue</CardTitle>
-                  <DollarSign className="h-5 w-5 text-purple-600" />
+                  <CardTitle className="text-sm font-medium text-red-800">Exceptions</CardTitle>
+                  <ArrowDown className="h-5 w-5 text-red-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-purple-900">${stats.revenue.toLocaleString()}</div>
-                  <div className="flex items-center gap-1 text-sm">
-                    <ArrowUp className="h-3 w-3 text-green-600" />
-                    <span className="text-green-600 font-medium">+{stats.revenueChange}%</span>
-                    <span className="text-purple-700">from last month</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-red-800">Issues</CardTitle>
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-red-900">{stats.issues}</div>
-                  <div className="flex items-center gap-1 text-sm">
-                    <ArrowDown className="h-3 w-3 text-green-600" />
-                    <span className="text-green-600 font-medium">{stats.issuesChange}%</span>
-                    <span className="text-red-700">from last month</span>
-                  </div>
+                  <div className="text-3xl font-bold text-red-900">{stats?.exceptionCount || 0}</div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Recent Shipments</CardTitle>
-                    <CardDescription>Latest package deliveries and updates</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    View All
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentShipments.map((shipment) => (
-                      <div key={shipment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-slate-900">{shipment.id}</p>
-                            <Badge className={`text-xs ${getStatusColor(shipment.status)}`}>{shipment.status}</Badge>
-                          </div>
-                          <p className="text-sm text-slate-600">{shipment.customer}</p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                            <MapPin className="h-3 w-3" />
-                            {shipment.destination}
-                            <Clock className="h-3 w-3 ml-2" />
-                            {shipment.time}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-slate-900">${shipment.amount}</p>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <MoreHorizontal className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">System Health</CardTitle>
-                    <CardDescription>Current status of all services</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Monitor
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {systemStatus.map((service) => (
-                      <div
-                        key={service.service}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-900">{service.service}</p>
-                          <p className="text-sm text-slate-600">Uptime: {service.uptime}</p>
-                        </div>
-                        <Badge className={`${getStatusColor(service.status)}`}>{service.status}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="packages" className="space-y-6">
+            {/* Revenue Card */}
             <Card className="shadow-lg">
               <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardTitle>Revenue Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold text-slate-900">
+                  ${stats?.totalRevenue?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-sm text-slate-600 mt-2">Total revenue from all shipments</p>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activities */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle>Recent Activities</CardTitle>
+                <CardDescription>Latest tracking updates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {activities.slice(0, 10).map((activity) => (
+                    <div key={activity.id} className="p-3 bg-slate-50 rounded-lg border">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <Badge variant="outline" className="text-xs mb-1">
+                            {activity.type}
+                          </Badge>
+                          <p className="text-sm text-slate-900 font-medium">
+                            {activity.trackingNumber}
+                          </p>
+                          <p className="text-sm text-slate-600">{activity.description}</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tracking Numbers Tab */}
+          <TabsContent value="tracking" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-xl">Package Management</CardTitle>
-                    <CardDescription>Monitor and manage all packages in the system</CardDescription>
+                    <CardTitle>Tracking Numbers</CardTitle>
+                    <CardDescription>Manage all shipments</CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                    <Button size="sm" className="bg-red-600 hover:bg-red-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Package
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => setTrackingDialogOpen(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Tracking
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="border-b">
+                    <thead className="border-b bg-slate-50">
                       <tr>
                         <th className="text-left py-3 px-4">Tracking #</th>
-                        <th className="text-left py-3 px-4">Customer</th>
+                        <th className="text-left py-3 px-4">Sender</th>
+                        <th className="text-left py-3 px-4">Recipient</th>
                         <th className="text-left py-3 px-4">Status</th>
-                        <th className="text-left py-3 px-4">Destination</th>
-                        <th className="text-left py-3 px-4">Value</th>
+                        <th className="text-left py-3 px-4">Priority</th>
+                        <th className="text-left py-3 px-4">Cost</th>
                         <th className="text-left py-3 px-4">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {recentShipments.map((shipment) => (
-                        <tr key={shipment.id} className="border-b hover:bg-slate-50">
-                          <td className="py-3 px-4 font-medium">{shipment.id}</td>
-                          <td className="py-3 px-4">{shipment.customer}</td>
+                      {trackingNumbers.map((t) => (
+                        <tr key={t.id} className="border-b hover:bg-slate-50">
+                          <td className="py-3 px-4 font-mono font-medium">{t.trackingNumber}</td>
+                          <td className="py-3 px-4 text-sm">{t.senderName}</td>
+                          <td className="py-3 px-4 text-sm">{t.recipientName}</td>
                           <td className="py-3 px-4">
-                            <Badge className={getStatusColor(shipment.status)}>{shipment.status}</Badge>
+                            <Badge className={getStatusColor(t.status)}>
+                              {t.status.replace("_", " ").toUpperCase()}
+                            </Badge>
                           </td>
-                          <td className="py-3 px-4">{shipment.destination}</td>
-                          <td className="py-3 px-4">${shipment.amount.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-sm capitalize">{t.priority}</td>
+                          <td className="py-3 px-4 font-medium">${t.cost.toFixed(2)}</td>
                           <td className="py-3 px-4">
-                            <Button variant="ghost" size="sm">View</Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTracking(t)
+                                setTrackingDialogOpen(true)
+                              }}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -507,129 +538,145 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
+          {/* Products Tab */}
+          <TabsContent value="products" className="space-y-6">
             <Card className="shadow-lg">
               <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-xl">User Management</CardTitle>
-                    <CardDescription>Manage system users and permissions</CardDescription>
+                    <CardTitle>Products</CardTitle>
+                    <CardDescription>Manage goods and products</CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                    <Button size="sm" className="bg-red-600 hover:bg-red-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add User
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => setProductDialogOpen(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b">
-                      <tr>
-                        <th className="text-left py-3 px-4">Name</th>
-                        <th className="text-left py-3 px-4">Email</th>
-                        <th className="text-left py-3 px-4">Role</th>
-                        <th className="text-left py-3 px-4">Status</th>
-                        <th className="text-left py-3 px-4">Joined</th>
-                        <th className="text-left py-3 px-4">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { id: 1, name: "Alice Johnson", email: "alice@swift.com", role: "admin", status: "Active", joined: "Jan 2024" },
-                        { id: 2, name: "Bob Smith", email: "bob@swift.com", role: "manager", status: "Active", joined: "Feb 2024" },
-                        { id: 3, name: "Carol Davis", email: "carol@swift.com", role: "support", status: "Active", joined: "Mar 2024" },
-                        { id: 4, name: "David Wilson", email: "david@swift.com", role: "user", status: "Inactive", joined: "Apr 2024" },
-                      ].map((user) => (
-                        <tr key={user.id} className="border-b hover:bg-slate-50">
-                          <td className="py-3 px-4 font-medium">{user.name}</td>
-                          <td className="py-3 px-4">{user.email}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant="outline" className="capitalize">{user.role}</Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge variant={user.status === "Active" ? "default" : "secondary"}>{user.status}</Badge>
-                          </td>
-                          <td className="py-3 px-4">{user.joined}</td>
-                          <td className="py-3 px-4">
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {products.map((p) => (
+                    <Card key={p.id} className="border">
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-slate-500">SKU</p>
+                            <p className="font-mono font-semibold">{p.sku}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{p.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-600">{p.description}</p>
+                          </div>
+                          <div className="flex justify-between pt-2">
+                            <Badge variant="outline">{p.category}</Badge>
+                            <span className="text-sm font-semibold">${p.pricing.baseCost}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle>Daily Shipments</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48 bg-gradient-to-t from-blue-100 to-blue-50 rounded-lg flex items-end justify-around p-4 gap-2">
-                    {[45, 62, 38, 75, 58, 82, 71].map((height, i) => (
-                      <div key={i} className="flex-1 bg-blue-500 rounded-t" style={{ height: `${height}%` }} />
-                    ))}
-                  </div>
-                  <div className="flex justify-around text-xs text-gray-600 mt-3">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                      <span key={day}>{day}</span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle>Revenue Trend</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48 bg-gradient-to-t from-green-100 to-green-50 rounded-lg flex items-end justify-around p-4 gap-2">
-                    {[35, 48, 55, 62, 70, 85, 92].map((height, i) => (
-                      <div key={i} className="flex-1 bg-green-500 rounded-t" style={{ height: `${height}%` }} />
-                    ))}
-                  </div>
-                  <div className="flex justify-around text-xs text-gray-600 mt-3">
-                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"].map((month) => (
-                      <span key={month}>{month}</span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
+          {/* Locations Tab */}
+          <TabsContent value="locations" className="space-y-6">
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle>Top Routes</CardTitle>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Locations</CardTitle>
+                    <CardDescription>Pickup and dropoff points</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setLocationDialogOpen(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Location
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { route: "NYC → LA", packages: 1247, revenue: "$15,430" },
-                    { route: "Chicago → Miami", packages: 892, revenue: "$11,205" },
-                    { route: "Boston → Houston", packages: 756, revenue: "$9,450" },
-                    { route: "Seattle → Denver", packages: 624, revenue: "$7,800" },
-                  ].map((route) => (
-                    <div key={route.route} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{route.route}</p>
-                        <p className="text-sm text-gray-600">{route.packages} packages</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {locations.map((l) => (
+                    <Card key={l.id} className="border">
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-slate-900">{l.name}</p>
+                              <Badge variant="outline" className="mt-1 text-xs">
+                                {l.type}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            <p>{l.address.street}</p>
+                            <p>
+                              {l.address.city}, {l.address.state} {l.address.zipCode}
+                            </p>
+                          </div>
+                          <div className="text-sm">
+                            <p className="font-medium text-slate-900">Contact</p>
+                            <p className="text-slate-600">{l.contact.personName}</p>
+                            <p className="text-slate-600">{l.contact.phone}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Activities Tab */}
+          <TabsContent value="activities" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle>All Activities</CardTitle>
+                <CardDescription>Complete tracking activity log</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {activities.map((a) => (
+                    <div
+                      key={a.id}
+                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono font-semibold text-sm">
+                              {a.trackingNumber}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {a.type}
+                            </Badge>
+                            <Badge className={getStatusColor(a.status)}>
+                              {a.status.replace("_", " ").toUpperCase()}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-700">{a.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {a.location}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(a.timestamp).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="font-bold text-green-600">{route.revenue}</p>
                     </div>
                   ))}
                 </div>
@@ -637,118 +684,307 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="system" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {systemStatus.map((service) => (
-                <Card key={service.service} className="shadow-lg">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-lg">{service.service}</h3>
-                      <Badge className={getStatusColor(service.status)}>{service.status}</Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-sm text-gray-600">Uptime</p>
-                        <p className="text-2xl font-bold text-green-600">{service.uptime}</p>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-500 h-2 rounded-full"
-                          style={{ width: service.uptime }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500">Last checked: Just now</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle>System Logs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm max-h-64 overflow-y-auto">
-                  {[
-                    { time: "14:32:15", level: "INFO", message: "Backup completed successfully" },
-                    { time: "14:31:02", level: "INFO", message: "Cache cleared" },
-                    { time: "14:25:44", level: "WARNING", message: "High memory usage detected" },
-                    { time: "14:20:12", level: "INFO", message: "Database optimization started" },
-                    { time: "14:15:08", level: "INFO", message: "Load balanced across servers" },
-                  ].map((log, i) => (
-                    <div key={i} className="flex gap-3 p-2 hover:bg-slate-50 rounded">
-                      <span className="text-gray-400 font-mono">{log.time}</span>
-                      <Badge variant={log.level === "WARNING" ? "destructive" : "secondary"} className="text-xs">
-                        {log.level}
-                      </Badge>
-                      <span className="text-gray-700">{log.message}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
+          {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl">System Settings</CardTitle>
-                <CardDescription>Configure system preferences and options</CardDescription>
+                <CardTitle>System Settings</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent>
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Email Settings</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium">SMTP Server</label>
-                      <Input defaultValue="smtp.swiftcourier.com" className="mt-1" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Port</label>
-                        <Input defaultValue="587" className="mt-1" />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">From Email</label>
-                        <Input defaultValue="noreply@swiftcourier.com" className="mt-1" />
-                      </div>
-                    </div>
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-900">Unified Tracking System</p>
+                    <p className="text-sm text-blue-800 mt-1">
+                      Manage all tracking numbers, products, and locations from one dashboard
+                    </p>
                   </div>
                 </div>
-
-                <div className="border-t pt-6 space-y-4">
-                  <h3 className="font-semibold">API Settings</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium">API Key</label>
-                      <Input type="password" defaultValue="sk_live_xxxxxxxxxxxxxxxxxx" className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Rate Limit (requests/min)</label>
-                      <Input defaultValue="1000" className="mt-1" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6 space-y-4">
-                  <h3 className="font-semibold">Maintenance</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                      <span className="text-sm font-medium">Enable Maintenance Mode</span>
-                      <input type="checkbox" className="h-4 w-4" />
-                    </div>
-                    <Button variant="outline" className="w-full">Clear Cache</Button>
-                    <Button variant="outline" className="w-full">Optimize Database</Button>
-                  </div>
-                </div>
-
-                <Button className="w-full mt-6">Save Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Create Tracking Dialog */}
+      <Dialog open={trackingDialogOpen} onOpenChange={setTrackingDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Tracking Number</DialogTitle>
+            <DialogDescription>Create a new shipment tracking number</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Product</label>
+              <Select
+                value={trackingFormData.productId || ""}
+                onValueChange={(val) =>
+                  setTrackingFormData({ ...trackingFormData, productId: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Pickup Location</label>
+              <Select
+                value={trackingFormData.senderLocationId || ""}
+                onValueChange={(val) =>
+                  setTrackingFormData({ ...trackingFormData, senderLocationId: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select pickup location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations
+                    .filter((l) => l.type === "pickup" || l.type === "warehouse")
+                    .map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Dropoff Location</label>
+              <Select
+                value={trackingFormData.recipientLocationId || ""}
+                onValueChange={(val) =>
+                  setTrackingFormData({ ...trackingFormData, recipientLocationId: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select dropoff location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations
+                    .filter((l) => l.type === "dropoff" || l.type === "hub")
+                    .map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Input
+              placeholder="Recipient Name"
+              value={trackingFormData.recipientName || ""}
+              onChange={(e) =>
+                setTrackingFormData({
+                  ...trackingFormData,
+                  recipientName: e.target.value,
+                })
+              }
+            />
+
+            <Input
+              placeholder="Sender Name"
+              value={trackingFormData.senderName || ""}
+              onChange={(e) =>
+                setTrackingFormData({ ...trackingFormData, senderName: e.target.value })
+              }
+            />
+
+            <Select
+              value={trackingFormData.priority || "standard"}
+              onValueChange={(val) =>
+                setTrackingFormData({ ...trackingFormData, priority: val })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="express">Express</SelectItem>
+                <SelectItem value="overnight">Overnight</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="number"
+              placeholder="Cost"
+              value={trackingFormData.cost || ""}
+              onChange={(e) =>
+                setTrackingFormData({ ...trackingFormData, cost: parseFloat(e.target.value) })
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTrackingDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTracking} className="bg-red-600 hover:bg-red-700">
+              Create Tracking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Product Dialog */}
+      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Product</DialogTitle>
+            <DialogDescription>Create a new product</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="SKU"
+              value={productFormData.sku || ""}
+              onChange={(e) =>
+                setProductFormData({ ...productFormData, sku: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Product Name"
+              value={productFormData.name || ""}
+              onChange={(e) =>
+                setProductFormData({ ...productFormData, name: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Description"
+              value={productFormData.description || ""}
+              onChange={(e) =>
+                setProductFormData({
+                  ...productFormData,
+                  description: e.target.value,
+                })
+              }
+            />
+            <Input
+              placeholder="Category"
+              value={productFormData.category || ""}
+              onChange={(e) =>
+                setProductFormData({ ...productFormData, category: e.target.value })
+              }
+            />
+            <Input
+              type="number"
+              placeholder="Base Cost"
+              value={productFormData.pricing?.baseCost || ""}
+              onChange={(e) =>
+                setProductFormData({
+                  ...productFormData,
+                  pricing: { baseCost: parseFloat(e.target.value), currency: "USD" },
+                })
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProductDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProduct} className="bg-red-600 hover:bg-red-700">
+              Add Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Location Dialog */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Location</DialogTitle>
+            <DialogDescription>Create a new pickup/dropoff location</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="Location Name"
+              value={locationFormData.name || ""}
+              onChange={(e) =>
+                setLocationFormData({ ...locationFormData, name: e.target.value })
+              }
+            />
+            <Select
+              value={locationFormData.type || "pickup"}
+              onValueChange={(val) =>
+                setLocationFormData({ ...locationFormData, type: val })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pickup">Pickup</SelectItem>
+                <SelectItem value="dropoff">Dropoff</SelectItem>
+                <SelectItem value="hub">Hub</SelectItem>
+                <SelectItem value="warehouse">Warehouse</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Street Address"
+              value={locationFormData.address?.street || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  address: { ...locationFormData.address, street: e.target.value },
+                })
+              }
+            />
+            <Input
+              placeholder="City"
+              value={locationFormData.address?.city || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  address: { ...locationFormData.address, city: e.target.value },
+                })
+              }
+            />
+            <Input
+              placeholder="Contact Person"
+              value={locationFormData.contact?.personName || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  contact: { ...locationFormData.contact, personName: e.target.value },
+                })
+              }
+            />
+            <Input
+              placeholder="Phone"
+              value={locationFormData.contact?.phone || ""}
+              onChange={(e) =>
+                setLocationFormData({
+                  ...locationFormData,
+                  contact: { ...locationFormData.contact, phone: e.target.value },
+                })
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLocationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateLocation} className="bg-red-600 hover:bg-red-700">
+              Add Location
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
