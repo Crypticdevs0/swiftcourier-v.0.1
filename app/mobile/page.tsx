@@ -5,10 +5,62 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { QrCode, Download, Smartphone, Bell, MapPin, Camera, Star } from "lucide-react"
+import { QrCode, Download, Smartphone, Bell, MapPin, Camera, Star, AlertCircle, CheckCircle } from "lucide-react"
+
+interface SMSState {
+  loading: boolean
+  error: string
+  success: string
+}
 
 export default function MobilePage() {
   const [phoneNumber, setPhoneNumber] = useState("")
+  const [smsState, setSmsState] = useState<SMSState>({ loading: false, error: "", success: "" })
+
+  const handleSendSMSLink = async () => {
+    if (!phoneNumber.trim()) {
+      setSmsState({ loading: false, error: "Please enter a phone number", success: "" })
+      return
+    }
+
+    setSmsState({ loading: true, error: "", success: "" })
+
+    try {
+      const response = await fetch("/api/notifications/send-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          phoneNumber: phoneNumber.replace(/\D/g, ""),
+          type: "app_download_link",
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSmsState({
+          loading: false,
+          error: "",
+          success: "Download link sent! Check your text messages."
+        })
+        setPhoneNumber("")
+      } else {
+        setSmsState({
+          loading: false,
+          error: data.message || "Failed to send SMS",
+          success: ""
+        })
+      }
+    } catch (error) {
+      setSmsState({
+        loading: false,
+        error: "Network error while sending SMS",
+        success: ""
+      })
+      console.error("SMS error:", error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
