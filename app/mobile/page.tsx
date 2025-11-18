@@ -265,13 +265,22 @@ export default function MobilePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button size="lg" className="h-16 bg-black text-white hover:bg-gray-800">
+                    <Button
+                      size="lg"
+                      className="h-16 bg-black text-white hover:bg-gray-800"
+                      onClick={() => window.open("https://apps.apple.com/app/swift-courier", "_blank")}
+                    >
                       <div className="text-left">
                         <div className="text-xs">Download on the</div>
                         <div className="text-lg font-semibold">App Store</div>
                       </div>
                     </Button>
-                    <Button size="lg" variant="outline" className="h-16">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="h-16"
+                      onClick={() => window.open("https://play.google.com/store/apps/details?id=com.swiftcourier", "_blank")}
+                    >
                       <div className="text-left">
                         <div className="text-xs">Get it on</div>
                         <div className="text-lg font-semibold">Google Play</div>
