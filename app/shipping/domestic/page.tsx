@@ -48,11 +48,95 @@ export default function DomesticShippingPage() {
   const [calcError, setCalcError] = useState("")
 
   const services = [
-    { id: "express", name: "Express Overnight", days: "1 business day", basePrice: "$45.99" },
-    { id: "priority", name: "Priority 2-Day", days: "2 business days", basePrice: "$25.99" },
-    { id: "standard", name: "Standard Ground", days: "5-7 business days", basePrice: "$12.99" },
-    { id: "economy", name: "Economy Ground", days: "7-10 business days", basePrice: "$8.99" },
+    { id: "express", name: "Express Overnight", days: "1 business day", basePrice: 45.99 },
+    { id: "priority", name: "Priority 2-Day", days: "2 business days", basePrice: 25.99 },
+    { id: "standard", name: "Standard Ground", days: "5-7 business days", basePrice: 12.99 },
+    { id: "economy", name: "Economy Ground", days: "7-10 business days", basePrice: 8.99 },
   ]
+
+  const handleCalculateRate = async () => {
+    setCalcError("")
+    setEstimatedCost(null)
+
+    if (!selectedService) {
+      setCalcError("Please select a service type")
+      return
+    }
+
+    if (!calculatorForm.fromZip || !calculatorForm.toZip || !calculatorForm.weight) {
+      setCalcError("Please fill in required fields: From/To Zip and Weight")
+      return
+    }
+
+    try {
+      const response = await fetch("/api/shipping/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          fromZip: calculatorForm.fromZip,
+          toZip: calculatorForm.toZip,
+          weight: parseFloat(calculatorForm.weight),
+          service: selectedService,
+          declaredValue: calculatorForm.declaredValue ? parseFloat(calculatorForm.declaredValue) : 0,
+          dimensions: {
+            length: calculatorForm.length ? parseFloat(calculatorForm.length) : 0,
+            width: calculatorForm.width ? parseFloat(calculatorForm.width) : 0,
+            height: calculatorForm.height ? parseFloat(calculatorForm.height) : 0,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setEstimatedCost(data.cost)
+      } else {
+        setCalcError(data.message || "Failed to calculate rate")
+      }
+    } catch (error) {
+      setCalcError("Network error while calculating rate")
+      console.error("Rate calculation error:", error)
+    }
+  }
+
+  const handleTrackPackage = async () => {
+    setTrackingError("")
+    setTrackingData(null)
+
+    if (!trackingInput.trim()) {
+      setTrackingError("Please enter a tracking number")
+      return
+    }
+
+    setTrackingLoading(true)
+
+    try {
+      const response = await fetch(`/api/tracking/${trackingInput}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setTrackingData({
+          trackingNumber: data.package.trackingNumber,
+          status: data.package.status,
+          location: data.package.currentLocation || "Unknown",
+          estimatedDelivery: data.package.estimatedDelivery,
+        })
+      } else {
+        setTrackingError(data.message || "Package not found")
+      }
+    } catch (error) {
+      setTrackingError("Network error while tracking package")
+      console.error("Tracking error:", error)
+    } finally {
+      setTrackingLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
