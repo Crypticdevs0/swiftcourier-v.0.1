@@ -8,17 +8,135 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Calculator, Truck, Clock, DollarSign, MapPin } from "lucide-react"
+import { Calculator, Truck, Clock, DollarSign, MapPin, AlertCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+interface CalculatorForm {
+  fromZip: string
+  toZip: string
+  weight: string
+  declaredValue: string
+  length: string
+  width: string
+  height: string
+}
+
+interface TrackingData {
+  trackingNumber: string
+  status: string
+  location: string
+  estimatedDelivery: string
+}
 
 export default function DomesticShippingPage() {
+  const router = useRouter()
   const [selectedService, setSelectedService] = useState("")
+  const [calculatorForm, setCalculatorForm] = useState<CalculatorForm>({
+    fromZip: "",
+    toZip: "",
+    weight: "",
+    declaredValue: "",
+    length: "",
+    width: "",
+    height: "",
+  })
+  const [estimatedCost, setEstimatedCost] = useState<number | null>(null)
+  const [trackingInput, setTrackingInput] = useState("")
+  const [trackingData, setTrackingData] = useState<TrackingData | null>(null)
+  const [trackingLoading, setTrackingLoading] = useState(false)
+  const [trackingError, setTrackingError] = useState("")
+  const [calcError, setCalcError] = useState("")
 
   const services = [
-    { id: "express", name: "Express Overnight", days: "1 business day", basePrice: "$45.99" },
-    { id: "priority", name: "Priority 2-Day", days: "2 business days", basePrice: "$25.99" },
-    { id: "standard", name: "Standard Ground", days: "5-7 business days", basePrice: "$12.99" },
-    { id: "economy", name: "Economy Ground", days: "7-10 business days", basePrice: "$8.99" },
+    { id: "express", name: "Express Overnight", days: "1 business day", basePrice: 45.99 },
+    { id: "priority", name: "Priority 2-Day", days: "2 business days", basePrice: 25.99 },
+    { id: "standard", name: "Standard Ground", days: "5-7 business days", basePrice: 12.99 },
+    { id: "economy", name: "Economy Ground", days: "7-10 business days", basePrice: 8.99 },
   ]
+
+  const handleCalculateRate = async () => {
+    setCalcError("")
+    setEstimatedCost(null)
+
+    if (!selectedService) {
+      setCalcError("Please select a service type")
+      return
+    }
+
+    if (!calculatorForm.fromZip || !calculatorForm.toZip || !calculatorForm.weight) {
+      setCalcError("Please fill in required fields: From/To Zip and Weight")
+      return
+    }
+
+    try {
+      const response = await fetch("/api/shipping/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          fromZip: calculatorForm.fromZip,
+          toZip: calculatorForm.toZip,
+          weight: parseFloat(calculatorForm.weight),
+          service: selectedService,
+          declaredValue: calculatorForm.declaredValue ? parseFloat(calculatorForm.declaredValue) : 0,
+          dimensions: {
+            length: calculatorForm.length ? parseFloat(calculatorForm.length) : 0,
+            width: calculatorForm.width ? parseFloat(calculatorForm.width) : 0,
+            height: calculatorForm.height ? parseFloat(calculatorForm.height) : 0,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setEstimatedCost(data.cost)
+      } else {
+        setCalcError(data.message || "Failed to calculate rate")
+      }
+    } catch (error) {
+      setCalcError("Network error while calculating rate")
+      console.error("Rate calculation error:", error)
+    }
+  }
+
+  const handleTrackPackage = async () => {
+    setTrackingError("")
+    setTrackingData(null)
+
+    if (!trackingInput.trim()) {
+      setTrackingError("Please enter a tracking number")
+      return
+    }
+
+    setTrackingLoading(true)
+
+    try {
+      const response = await fetch(`/api/tracking/${trackingInput}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setTrackingData({
+          trackingNumber: data.package.trackingNumber,
+          status: data.package.status,
+          location: data.package.currentLocation || "Unknown",
+          estimatedDelivery: data.package.estimatedDelivery,
+        })
+      } else {
+        setTrackingError(data.message || "Package not found")
+      }
+    } catch (error) {
+      setTrackingError("Network error while tracking package")
+      console.error("Tracking error:", error)
+    } finally {
+      setTrackingLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -71,6 +189,13 @@ export default function DomesticShippingPage() {
                   <CardDescription>Calculate shipping costs for domestic deliveries</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {calcError && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                      <AlertCircle className="h-4 w-4" />
+                      {calcError}
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium">Service Type</label>
                     <Select value={selectedService} onValueChange={setSelectedService}>
@@ -80,7 +205,7 @@ export default function DomesticShippingPage() {
                       <SelectContent>
                         {services.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
-                            {service.name} - {service.basePrice}
+                            {service.name} - ${service.basePrice.toFixed(2)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -90,41 +215,81 @@ export default function DomesticShippingPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Zip Code From</label>
-                      <Input placeholder="00000" maxLength={5} />
+                      <Input
+                        placeholder="00000"
+                        maxLength={5}
+                        value={calculatorForm.fromZip}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, fromZip: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Zip Code To</label>
-                      <Input placeholder="00000" maxLength={5} />
+                      <Input
+                        placeholder="00000"
+                        maxLength={5}
+                        value={calculatorForm.toZip}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, toZip: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Weight (lbs)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.weight}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, weight: e.target.value })}
+                      />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Declared Value</label>
-                      <Input placeholder="$0.00" />
+                      <label className="text-sm font-medium">Declared Value ($)</label>
+                      <Input
+                        placeholder="0.00"
+                        type="number"
+                        step="0.01"
+                        value={calculatorForm.declaredValue}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, declaredValue: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium">Length (in)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.length}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, length: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Width (in)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.width}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, width: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Height (in)</label>
-                      <Input placeholder="0.0" />
+                      <Input
+                        placeholder="0.0"
+                        type="number"
+                        step="0.1"
+                        value={calculatorForm.height}
+                        onChange={(e) => setCalculatorForm({ ...calculatorForm, height: e.target.value })}
+                      />
                     </div>
                   </div>
 
-                  <Button className="w-full">
+                  <Button className="w-full" onClick={handleCalculateRate}>
                     <Calculator className="mr-2 h-4 w-4" />
                     Calculate Rate
                   </Button>
@@ -140,7 +305,7 @@ export default function DomesticShippingPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm font-medium">Service</span>
-                      <Badge>{selectedService || "Select service"}</Badge>
+                      <Badge>{selectedService ? services.find((s) => s.id === selectedService)?.name : "Select service"}</Badge>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm font-medium">Estimated Delivery</span>
@@ -151,7 +316,7 @@ export default function DomesticShippingPage() {
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm font-medium">Base Rate</span>
                       <span className="text-sm font-medium">
-                        {services.find((s) => s.id === selectedService)?.basePrice || "$0.00"}
+                        {selectedService ? `$${services.find((s) => s.id === selectedService)?.basePrice.toFixed(2)}` : "$0.00"}
                       </span>
                     </div>
                     <div className="border-t pt-3">
@@ -160,9 +325,19 @@ export default function DomesticShippingPage() {
                           <DollarSign className="h-4 w-4" />
                           Total Estimated Cost
                         </span>
-                        <span className="font-bold text-lg">Calculated</span>
+                        <span className="font-bold text-lg">
+                          {estimatedCost !== null ? `$${estimatedCost.toFixed(2)}` : "N/A"}
+                        </span>
                       </div>
                     </div>
+                    {estimatedCost !== null && (
+                      <Button
+                        className="w-full mt-2"
+                        onClick={() => router.push("/shipping/create")}
+                      >
+                        Proceed to Ship
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -220,13 +395,52 @@ export default function DomesticShippingPage() {
                 <CardDescription>Enter your tracking number to monitor your shipment</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {trackingError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4" />
+                    {trackingError}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <Input placeholder="Enter tracking number" className="flex-1" />
-                  <Button>
+                  <Input
+                    placeholder="Enter tracking number"
+                    className="flex-1"
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleTrackPackage()}
+                  />
+                  <Button
+                    onClick={handleTrackPackage}
+                    disabled={trackingLoading}
+                  >
                     <Truck className="mr-2 h-4 w-4" />
-                    Track
+                    {trackingLoading ? "Tracking..." : "Track"}
                   </Button>
                 </div>
+
+                {trackingData && (
+                  <div className="space-y-3 mt-4 pt-4 border-t">
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm font-medium text-gray-600 mb-1">Tracking Number</p>
+                      <p className="font-mono font-bold text-lg">{trackingData.trackingNumber}</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Status</p>
+                        <Badge>{trackingData.status}</Badge>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Location</p>
+                        <p className="text-sm font-medium">{trackingData.location}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Est. Delivery</p>
+                        <p className="text-sm font-medium">{new Date(trackingData.estimatedDelivery).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

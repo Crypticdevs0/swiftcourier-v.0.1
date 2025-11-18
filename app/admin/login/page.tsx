@@ -19,7 +19,6 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [showDemo, setShowDemo] = useState(true)
 
   useEffect(() => {
     if (!loading && user) {
@@ -74,11 +73,6 @@ export default function AdminLogin() {
     }
   }
 
-  const handleUseDemoCredentials = () => {
-    setEmail("admin@swiftcourier.com")
-    setPassword("admin123")
-    setErrors({})
-  }
 
   if (loading) {
     return (
@@ -206,65 +200,9 @@ export default function AdminLogin() {
               </Button>
             </form>
 
-            {/* Divider */}
-            <div className="my-6 flex items-center gap-3">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="text-xs text-slate-500 font-medium">OR</span>
-              <div className="flex-1 h-px bg-slate-200" />
-            </div>
-
-            {/* Demo Credentials */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-slate-200 hover:bg-slate-50 transition-colors"
-              onClick={handleUseDemoCredentials}
-              disabled={isLoading}
-            >
-              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-              Use Demo Credentials
-            </Button>
           </CardContent>
         </Card>
 
-        {/* Demo Info Box */}
-        {showDemo && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
-                Demo Access
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2 text-sm">
-                <p className="text-slate-700 font-medium">Test Admin Account:</p>
-                <div className="bg-white rounded-lg p-3 border border-blue-200 font-mono text-xs space-y-1">
-                  <p>
-                    <span className="text-slate-600">Email:</span>{" "}
-                    <span className="text-blue-700 font-semibold">admin@swiftcourier.com</span>
-                  </p>
-                  <p>
-                    <span className="text-slate-600">Password:</span>{" "}
-                    <span className="text-blue-700 font-semibold">admin123</span>
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Use these credentials to explore the unified tracking dashboard. No setup required!
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => setShowDemo(false)}
-              >
-                Dismiss
-              </Button>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Features */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 text-center text-xs">

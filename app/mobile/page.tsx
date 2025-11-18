@@ -5,10 +5,62 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { QrCode, Download, Smartphone, Bell, MapPin, Camera, Star } from "lucide-react"
+import { QrCode, Download, Smartphone, Bell, MapPin, Camera, Star, AlertCircle, CheckCircle } from "lucide-react"
+
+interface SMSState {
+  loading: boolean
+  error: string
+  success: string
+}
 
 export default function MobilePage() {
   const [phoneNumber, setPhoneNumber] = useState("")
+  const [smsState, setSmsState] = useState<SMSState>({ loading: false, error: "", success: "" })
+
+  const handleSendSMSLink = async () => {
+    if (!phoneNumber.trim()) {
+      setSmsState({ loading: false, error: "Please enter a phone number", success: "" })
+      return
+    }
+
+    setSmsState({ loading: true, error: "", success: "" })
+
+    try {
+      const response = await fetch("/api/notifications/send-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          phoneNumber: phoneNumber.replace(/\D/g, ""),
+          type: "app_download_link",
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSmsState({
+          loading: false,
+          error: "",
+          success: "Download link sent! Check your text messages."
+        })
+        setPhoneNumber("")
+      } else {
+        setSmsState({
+          loading: false,
+          error: data.message || "Failed to send SMS",
+          success: ""
+        })
+      }
+    } catch (error) {
+      setSmsState({
+        loading: false,
+        error: "Network error while sending SMS",
+        success: ""
+      })
+      console.error("SMS error:", error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -25,12 +77,20 @@ export default function MobilePage() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Swift Courier Mobile App</h1>
           <p className="text-xl text-gray-600 mb-8">Track packages, schedule pickups, and manage shipments on the go</p>
-          <div className="flex justify-center gap-4">
-            <Button size="lg" className="bg-black text-white hover:bg-gray-800">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button
+              size="lg"
+              className="bg-black text-white hover:bg-gray-800"
+              onClick={() => window.open("https://apps.apple.com/app/swift-courier", "_blank")}
+            >
               <Download className="mr-2 h-5 w-5" />
               Download for iOS
             </Button>
-            <Button size="lg" variant="outline">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.open("https://play.google.com/store/apps/details?id=com.swiftcourier", "_blank")}
+            >
               <Download className="mr-2 h-5 w-5" />
               Download for Android
             </Button>
@@ -205,13 +265,22 @@ export default function MobilePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button size="lg" className="h-16 bg-black text-white hover:bg-gray-800">
+                    <Button
+                      size="lg"
+                      className="h-16 bg-black text-white hover:bg-gray-800"
+                      onClick={() => window.open("https://apps.apple.com/app/swift-courier", "_blank")}
+                    >
                       <div className="text-left">
                         <div className="text-xs">Download on the</div>
                         <div className="text-lg font-semibold">App Store</div>
                       </div>
                     </Button>
-                    <Button size="lg" variant="outline" className="h-16">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="h-16"
+                      onClick={() => window.open("https://play.google.com/store/apps/details?id=com.swiftcourier", "_blank")}
+                    >
                       <div className="text-left">
                         <div className="text-xs">Get it on</div>
                         <div className="text-lg font-semibold">Google Play</div>
@@ -233,14 +302,37 @@ export default function MobilePage() {
                     <p className="text-sm text-blue-700 mb-3">
                       Enter your phone number to receive a download link via text message
                     </p>
-                    <div className="flex gap-2">
+
+                    {smsState.error && (
+                      <div className="flex items-center gap-2 p-2 mb-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        <AlertCircle className="h-4 w-4" />
+                        {smsState.error}
+                      </div>
+                    )}
+
+                    {smsState.success && (
+                      <div className="flex items-center gap-2 p-2 mb-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        {smsState.success}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Input
-                        placeholder="Enter phone number"
+                        placeholder="Enter phone number (e.g., 555-123-4567)"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && handleSendSMSLink()}
                         className="flex-1"
+                        disabled={smsState.loading}
                       />
-                      <Button>Send Link</Button>
+                      <Button
+                        onClick={handleSendSMSLink}
+                        disabled={smsState.loading}
+                        className="w-full sm:w-auto"
+                      >
+                        {smsState.loading ? "Sending..." : "Send Link"}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
